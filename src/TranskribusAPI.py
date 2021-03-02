@@ -77,7 +77,7 @@ class TextSegmentation():
         
         self.window.title('Login Transkribus')
         self.window.configure(bg='white')
-
+        self.window.geometry('890x380')
         #select a title image
         img = Label(self.window, image = self.titleImg)
         img.grid(row=0, column=0,sticky=W)
@@ -221,7 +221,7 @@ class TextSegmentation():
         
         #create the default Header
         self.createDefaultHeader()
-        self.window.geometry('950x400')
+        self.window.geometry('890x400')
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter für den Job definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
@@ -405,7 +405,7 @@ class TextSegmentation():
         
         #create the default Header
         self.createDefaultHeader()
-        self.window.geometry('950x460')
+        self.window.geometry('890x490')
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
@@ -465,10 +465,10 @@ class TextSegmentation():
          #create the button
         self.searchReplaceButton = Button(self.window,text='Text ersetzen starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(), textentrySearch.get(), textentryReplace.get()))
-        
-        self.window.grid_rowconfigure(9, minsize=25)
+        self.searchReplaceButton.place(x=330,y=430)
+        #self.window.grid_rowconfigure(12, minsize=25)
 
-        self.searchReplaceButton.grid(row=16, rowspan = 2, columnspan = 2)
+        #self.searchReplaceButton.grid(row=25, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
     
@@ -524,7 +524,7 @@ class TextSegmentation():
 
         #create the default Header
         self.createDefaultHeader() 
-        self.window.geometry('950x360')
+        self.window.geometry('890x410')
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter für das Sampling definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
@@ -864,7 +864,7 @@ class TextSegmentation():
         
         #create the default Header
         self.createDefaultHeader()
-        self.window.geometry('950x400')
+        self.window.geometry('890x400')
         
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter definieren:",font=self.titleFont, bg='white')
@@ -883,7 +883,7 @@ class TextSegmentation():
         textentryDocId.grid(row=4, column=1,sticky=W)
         
         #TR to be searched
-        Label(self.window, text='Textregion suchen:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
+        Label(self.window, text='zu exportierende Textregion:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
         textentryExportTR = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryExportTR.grid(row=6, column=0,sticky=W)
         textentryExportTR.insert(END, 'header')
@@ -1153,25 +1153,25 @@ class TextSegmentation():
         self.lineSegButton = Button(self.window,text='Linienerkennung', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startConfigurationWindow)
         #self.lineSegButton.grid(row=1,column = 0, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.lineSegButton.place(x=110, y=130, width=200, height=20)
+        self.lineSegButton.place(x=110, y=130, width=185, height=20)
         #Set the button for renaming textregions
 
         self.replaceTrButton = Button(self.window,text='Suchen/Ersetzen', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startSearchAndReplaceWindow)
 
         #self.replaceTrButton.grid(row=1,column = 1, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.replaceTrButton.place(x=320, y=130, width=200, height=20)
+        self.replaceTrButton.place(x=305, y=130, width=185, height=20)
         
         #Set the button for Sampling
         self.modelEvalButton = Button(self.window,text='Sampling', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startSamplesWindow)
         #self.modelEvalButton.grid(row=1, column = 2, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.modelEvalButton.place(x=530, y=130, width=200, height=20)
+        self.modelEvalButton.place(x=500, y=130, width=185, height=20)
         
         #Set the button for Textregion Export
         self.TrExportButton = Button(self.window,text='Export TR-Text', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startExportTrWindow)
-        self.TrExportButton.place(x=740, y=130, width=200, height=20)
+        self.TrExportButton.place(x=695, y=130, width=185, height=20)
         
         #Set the button for Textregion Import
         """self.TrImportButton = Button(self.window,text='Import TR-Text', font = self.buttonFont, height = 1, width = 40,
