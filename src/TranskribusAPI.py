@@ -541,7 +541,7 @@ class TextSegmentation():
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
-        
+        textentryDocId.insert(END, '')
         #starting page
         """Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
         textentryStartPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
@@ -671,7 +671,13 @@ class TextSegmentation():
         keys_GT = self.getDocTranscriptKeys(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, 'GT')
         #get the keys of the transcriptions of the selected model
         keys = self.getDocTranscriptKeys(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, self.selectedModel.get())
-        
+        transcripts_GT = self.getDocTranscript(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, 'GT')
+        transcripts_M = self.getDocTranscript(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, self.selectedModel.get())
+        charAmount_List = []
+        if len(transcripts_GT) == len(transcripts_M):
+            for i in range(len(transcripts_GT)):
+                amount = (len(transcripts_GT[i]) + len(transcripts_M[i]))/2
+                charAmount_List.append(len(transcripts_GT[i]))
         wer_list = []
         cer_list = []
         
@@ -681,7 +687,11 @@ class TextSegmentation():
                 wer, cer = self.getErrorRate(keys[k], keys_GT[k])
                 wer_list.append(wer)
                 cer_list.append(cer)
-                
+            cer_list_gew = []
+            wer_list_gew = []
+            for j in range(len(cer_list)):
+                cer_list_gew.append(cer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
+                wer_list_gew.append(wer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
             #check if excel file already exists
             if not os.path.exists(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx'):
                 #create the excel file
@@ -721,12 +731,12 @@ class TextSegmentation():
                 #write the evaluation to the excel file
                 if currentColumn < 3:
                     sht1.range('A{}'.format(currentRow)).value = currentDocId
-                    sht1.range('B{}'.format(currentRow)).value = np.mean(cer_list)
-                    sht1.range('C{}'.format(currentRow)).value = np.mean(wer_list)
+                    sht1.range('B{}'.format(currentRow)).value = np.sum(cer_list_gew)
+                    sht1.range('C{}'.format(currentRow)).value = np.sum(wer_list_gew)
                     sht1.range('D{}'.format(currentRow)).value = self.selectedModel.get()
                 else:
                     values = sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value
-                    values[currentColumn:currentColumn + 3] = [np.mean(cer_list), np.mean(wer_list), self.selectedModel.get()]
+                    values[currentColumn:currentColumn + 3] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get()]
                     sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value = values
         else:
             self.popupmsg("Transkriptionen wurden nicht gefunden! Vorgang für Modell {} und Doc {} wird abgebrochen...".format(self.selectedModel.get(), currentDocId))
@@ -772,17 +782,23 @@ class TextSegmentation():
         """
             This function returns the transcription of a certain document.
         """
-
-        text = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
-        if text == None:
+        pxList = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
+        if pxList == None:
             return
         full_text = []
-        soup = BeautifulSoup(text, "xml")
-        for line in soup.findAll("TextLine"):
-            for t in line.findAll("Unicode"):
-                full_text.append(t.text)
-                
-        return full_text
+        full_text_List = []
+        raw_text = ''
+        for px in pxList:
+            soup = BeautifulSoup(px, "xml")
+            for line in soup.findAll("TextLine"):
+                for t in line.findAll("Unicode"):
+                    full_text.append(t.text)
+            for line in full_text:
+                raw_text = line + '\n'
+            full_text_List.append(raw_text[:-1])
+            full_text = []
+            raw_text = ''
+        return full_text_List
     
     def getDocTranscriptKeys(self, colId, docId, textentryStartPage, textentryEndPage, toolName):
         """
@@ -1257,4 +1273,5 @@ class TextSegmentation():
 if __name__ == "__main__":
   
     TS = TextSegmentation()
+
 
