@@ -705,8 +705,8 @@ class TextSegmentation():
                 #write the first entry together with the columns header
                 sht1.range('A1').value = columns
                 sht1.range('A2').value = currentDocId
-                sht1.range('B2').value = np.mean(cer_list)
-                sht1.range('C2').value = np.mean(wer_list)
+                sht1.range('B2').value = np.sum(cer_list_gew)
+                sht1.range('C2').value = np.sum(wer_list_gew)
                 sht1.range('D2').value = self.selectedModel.get()
             else:
                 #open the excel sheet if the file already exists
