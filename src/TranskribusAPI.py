@@ -678,136 +678,141 @@ class TextSegmentation():
         transcripts_GT = self.getDocTranscript(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, 'GT')
         transcripts_M = self.getDocTranscript(textentryColId.get(), currentDocId, textentryStartPage, textentryEndPage, self.selectedModel.get())
         charAmount_List = []
-        if len(transcripts_GT) == len(transcripts_M):
-            for i in range(len(transcripts_GT)):
-                amount = (len(transcripts_GT[i]) + len(transcripts_M[i]))/2
-                charAmount_List.append(len(transcripts_GT[i]))
-        wer_list = []
-        cer_list = []
-        if not os.path.exists(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'):
-            os.makedirs(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/')
-        if not os.path.exists(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'):
-            os.makedirs(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/')
+        try:
+            if len(transcripts_GT) == len(transcripts_M):
+                for i in range(len(transcripts_GT)):
+                    amount = (len(transcripts_GT[i]) + len(transcripts_M[i]))/2
+                    charAmount_List.append(len(transcripts_GT[i]))
+            wer_list = []
+            cer_list = []
+            if not os.path.exists(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'):
+                os.makedirs(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/')
+            if not os.path.exists(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'):
+                os.makedirs(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/')
         #calculate wer and cer for every transcription a model produced
-        if not (keys == None or keys_GT == None):
-            for k in range(len(keys)):
-                wer, cer = self.getErrorRate(keys[k], keys_GT[k])
-                wer_list.append(wer)
-                cer_list.append(cer)
-            cer_list_gew = []
-            wer_list_gew = []
-            for j in range(len(cer_list)):
-                cer_list_gew.append(cer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
-                wer_list_gew.append(wer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
-            pages = self.extractTranscriptionRaw(currentColId, currentDocId, textentryStartPage, textentryEndPage, self.selectedModel.get())
+            if not (keys == None or keys_GT == None):
+                for k in range(len(keys)):
+                    wer, cer = self.getErrorRate(keys[k], keys_GT[k])
+                    wer_list.append(wer)
+                    cer_list.append(cer)
+                cer_list_gew = []
+                wer_list_gew = []
+                for j in range(len(cer_list)):
+                    cer_list_gew.append(cer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
+                    wer_list_gew.append(wer_list[j]*charAmount_List[j]/np.sum(charAmount_List))
+                pages = self.extractTranscriptionRaw(currentColId, currentDocId, textentryStartPage, textentryEndPage, self.selectedModel.get())
             #find best and worst cer
-            cer_best = [100,0]
-            cer_worst = [0,0]
-            for h in range(len(cer_list)):
-                if cer_list[h] < cer_best[0]:
-                    cer_best[0] = cer_list[h]
-                    cer_best[1] = h
-                if cer_list[h] > cer_worst[0]:
-                    cer_worst[0] = cer_list[h]
-                    cer_worst[1] = h
+                cer_best = [100,0]
+                cer_worst = [0,0]
+                for h in range(len(cer_list)):
+                    if cer_list[h] < cer_best[0]:
+                        cer_best[0] = cer_list[h]
+                        cer_best[1] = h
+                    if cer_list[h] > cer_worst[0]:
+                        cer_worst[0] = cer_list[h]
+                        cer_worst[1] = h
             #save best and worst cer as image and variable
-            image_worst_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_worst[1]]['url'])
-            image_best_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_best[1]]['url'])
-            soup_best = BeautifulSoup(pages[cer_best[1]], "xml")
-            soup_worst = BeautifulSoup(pages[cer_worst[1]], "xml")
-            for region in soup_best.findAll("TextLine"):
+                image_worst_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_worst[1]]['url'])
+                image_best_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_best[1]]['url'])
+                soup_best = BeautifulSoup(pages[cer_best[1]], "xml")
+                soup_worst = BeautifulSoup(pages[cer_worst[1]], "xml")
+                for region in soup_best.findAll("TextLine"):
                 #crop out the image
-                cords = region.find('Coords')['points']
-                points = [c.split(",") for c in cords.split(" ")]
-                maxX = -1000
-                minX = 100000
-                maxY = -1000
-                minY = 100000
-                for p in points:
-                    maxX = max(int(p[0]), maxX)
-                    minX = min(int(p[0]), minX)
-                    maxY = max(int(p[1]), maxY)
-                    minY = min(int(p[1]), minY)
+                    cords = region.find('Coords')['points']
+                    points = [c.split(",") for c in cords.split(" ")]
+                    maxX = -1000
+                    minX = 100000
+                    maxY = -1000
+                    minY = 100000
+                    for p in points:
+                        maxX = max(int(p[0]), maxX)
+                        minX = min(int(p[0]), minX)
+                        maxY = max(int(p[1]), maxY)
+                        minY = min(int(p[1]), minY)
                     image_best = image_best_temp.crop((minX, minY, maxX,maxY))
-            for region in soup_worst.findAll("TextLine"):
+                for region in soup_worst.findAll("TextLine"):
                 #crop out the image
-                cords = region.find('Coords')['points']
-                points = [c.split(",") for c in cords.split(" ")]
-                maxX = -1000
-                minX = 100000
-                maxY = -1000
-                minY = 100000
-                for p in points:
-                    maxX = max(int(p[0]), maxX)
-                    minX = min(int(p[0]), minX)
-                    maxY = max(int(p[1]), maxY)
-                    minY = min(int(p[1]), minY)
+                    cords = region.find('Coords')['points']
+                    points = [c.split(",") for c in cords.split(" ")]
+                    maxX = -1000
+                    minX = 100000
+                    maxY = -1000
+                    minY = 100000
+                    for p in points:
+                        maxX = max(int(p[0]), maxX)
+                        minX = min(int(p[0]), minX)
+                        maxY = max(int(p[1]), maxY)
+                        minY = min(int(p[1]), minY)
                     image_worst = image_worst_temp.crop((minX, minY, maxX,maxY))
-            worst_cer = cer_worst[0]
-            best_cer = cer_best[0]
-            best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
-            worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
-            image_best.save(best_url)
-            image_worst.save(worst_url)
+                worst_cer = cer_worst[0]
+                best_cer = cer_best[0]
+                best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
+                worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
+                image_best.save(best_url)
+                image_worst.save(worst_url)
+
             #check if excel file already exists
-            if not os.path.exists(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx'):
+                if not os.path.exists(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx'):
                 #create the excel file
-                pd.DataFrame().to_excel(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
+                    pd.DataFrame().to_excel(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
                 #wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
                 #open the created excel file
                 #sht1 = wb.add_worksheet()
-                wb = xw.Book(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
-                sht1 = wb.sheets['Sheet1'] 
+                    wb = xw.Book(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
+                    sht1 = wb.sheets['Sheet1'] 
                 #init the column names
-                columns = ['doc.ID Sample']
-                columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i), 'Best_CER{}'.format(i), 'Best_CER_Imag{}'.format(i), 'Worst_CER{}'.format(i), 'Worst_CER_Imag{}'.format(i)] for i in range(1,10)]))
+                    columns = ['doc.ID Sample']
+                    columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i), 'Best_CER{}'.format(i), 'Best_CER_Imag{}'.format(i), 'Worst_CER{}'.format(i), 'Worst_CER_Imag{}'.format(i)] for i in range(1,10)]))
 
-                sht1.range('A1').value = columns
-                sht1.range('A2').value = currentDocId
-                sht1.range('B2').value = np.sum(cer_list_gew)
-                sht1.range('C2').value = np.sum(wer_list_gew)
-                sht1.range('D2').value = self.selectedModel.get()
-                sht1.range('E2').value = best_cer
-                sht1.range('G2').value = worst_cer
-                sht1.range('F2').value = '=HYPERLINK("' + best_url + '")'
-                sht1.range('H2').value = '=HYPERLINK("' + worst_url + '")'
+                    sht1.range('A1').value = columns
+                    sht1.range('A2').value = currentDocId
+                    sht1.range('B2').value = np.sum(cer_list_gew)
+                    sht1.range('C2').value = np.sum(wer_list_gew)
+                    sht1.range('D2').value = self.selectedModel.get()
+                    sht1.range('E2').value = best_cer
+                    sht1.range('G2').value = worst_cer
+                    sht1.range('F2').value = '=HYPERLINK("' + best_url + '")'
+                    sht1.range('H2').value = '=HYPERLINK("' + worst_url + '")'
 
-            else:
+                else:
                 #open the excel sheet if the file already exists
-                wb = xw.Book(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
-                sht1 = wb.sheets['Sheet1']
+                    wb = xw.Book(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
+                    sht1 = wb.sheets['Sheet1']
                 #set the current row to two in order to not overwrite the column names
-                currentRow = 2
-                for c, docId in enumerate(sht1.range('A1','A10000').value):
-                    if docId == None:
-                        currentRow = c + 1
-                        break
-                    try:
-                        if int(docId) == int(currentDocId):
+                    currentRow = 2
+                    for c, docId in enumerate(sht1.range('A1','A10000').value):
+                        if docId == None:
                             currentRow = c + 1
                             break
-                    except:
-                        pass
+                        try:
+                            if int(docId) == int(currentDocId):
+                                currentRow = c + 1
+                                break
+                        except:
+                            pass
                 
                 #find the column where one should write to (in case there is an already evaluated model on this document)
-                currentColumn = sum(x is not None for x in sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value)
+                    currentColumn = sum(x is not None for x in sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value)
                 
                 #write the evaluation to the excel file
-                if currentColumn < 3:
-                    sht1.range('A{}'.format(currentRow)).value = currentDocId
-                    sht1.range('B{}'.format(currentRow)).value = np.sum(cer_list_gew)
-                    sht1.range('C{}'.format(currentRow)).value = np.sum(wer_list_gew)
-                    sht1.range('D{}'.format(currentRow)).value = self.selectedModel.get()
-                    sht1.range('E{}'.format(currentRow)).value = best_cer
-                    sht1.range('F{}'.format(currentRow)).value = '=HYPERLINK("' + best_url + '")'
-                    sht1.range('G{}'.format(currentRow)).value = worst_cer
-                    sht1.range('H{}'.format(currentRow)).value = '=HYPERLINK("' + worst_url + '")'
-                else:
-                    values = sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value
-                    values[currentColumn:currentColumn + 6] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get(), best_cer, '=HYPERLINK("' + best_url + '")', worst_cer, '=HYPERLINK("' + worst_url + '")']
-                    sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value = values
-        else:
-            self.popupmsg("Transkriptionen wurden nicht gefunden! Vorgang für Modell {} und Doc {} wird abgebrochen...".format(self.selectedModel.get(), currentDocId))
+                    if currentColumn < 3:
+                        sht1.range('A{}'.format(currentRow)).value = currentDocId
+                        sht1.range('B{}'.format(currentRow)).value = np.sum(cer_list_gew)
+                        sht1.range('C{}'.format(currentRow)).value = np.sum(wer_list_gew)
+                        sht1.range('D{}'.format(currentRow)).value = self.selectedModel.get()
+                        sht1.range('E{}'.format(currentRow)).value = best_cer
+                        sht1.range('F{}'.format(currentRow)).value = '=HYPERLINK("' + best_url + '")'
+                        sht1.range('G{}'.format(currentRow)).value = worst_cer
+                        sht1.range('H{}'.format(currentRow)).value = '=HYPERLINK("' + worst_url + '")'
+                    else:
+                        values = sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value
+                        values[currentColumn:currentColumn + 6] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get(), best_cer, '=HYPERLINK("' + best_url + '")', worst_cer, '=HYPERLINK("' + worst_url + '")']
+                        sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value = values
+            else:
+                self.popupmsg("Transkriptionen wurden nicht gefunden! Vorgang für Modell {} und Doc {} wird abgebrochen...".format(self.selectedModel.get(), currentDocId))
+            wb.save(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
+        except:
+            self.popupmsg("Fehler bei  Modell {} und Doc {} aufgetreten. Vorgang wird abgebrochen.".format(self.selectedModel.get(), currentDocId))
         wb.save(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
         return
     
@@ -959,7 +964,7 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '52380')
+        textentryColId.insert(END, '')
 
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
@@ -1341,4 +1346,6 @@ class TextSegmentation():
 if __name__ == "__main__":
   
     TS = TextSegmentation()
+
+
 
