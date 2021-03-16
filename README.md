@@ -102,6 +102,7 @@ This module provides a way to evaluate a certain model on a document or an entir
 #### Output:
 
 ModelEvaluation.xlsx - The program writes the results in an excel file on the defined path defined as Zielordner.
+
 Folders with images of the lines with best and worst error rate.
 
 ### Module Text export per text region
