@@ -1003,7 +1003,7 @@ class TextSegmentation():
             return
         
         docName = self.getDocNameFromId(colId, docId)
-        text, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+        text, lineids, customs, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
         
         #write results in excel
         if os.path.exists(self.TARGET_DIR.get() + '/RegionExtraction.xlsx'):
@@ -1013,7 +1013,7 @@ class TextSegmentation():
         sht1 = wb.add_worksheet()
         
         #init the column names
-        columns = ['Dokument Id', 'Dokument Name', 'SeitenNr', 'Nummer auf Seite', 'Text', 'Bild']
+        columns = ['Dokument Id', 'Dokument Name', 'SeitenNr', 'Nummer auf Seite', 'Text', 'LineIds','Customs','Bild']
         
         #write the first entry together with the columns header
         for i, col in enumerate(columns):
@@ -1041,11 +1041,13 @@ class TextSegmentation():
                 sht1.write(row, 2, str(page + 1))
                 sht1.write(row, 3, str(c + 1))
                 sht1.write(row, 4, '\n'.join(text[page][c]), wrap)
-                
+                sht1.write(row, 5, '\n'.join(lineids[page][c]), wrap)
+                sht1.write(row, 6, '\n'.join(customs[page][c]), wrap)
+                #sht1.write(row, 6, xmls[page][c])
                 imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
 
                 # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                sht1.insert_image(row, 5,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
+                sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
                 row += 1
         wb.close()
         #delete the temporary folder for the images
@@ -1072,23 +1074,31 @@ class TextSegmentation():
             docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
 
             full_text = []
+            lineIds = []
+            customs = []
             imgs = []
 
             for c, page in enumerate(doc):
                 soup = BeautifulSoup(page, "xml")
                 page_txt = []
+                line_txt = []
+                custom_txt = []
                 page_imgs = []
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
                         if regionName in region['custom']:
                             region_text = []
-
+                            lineid_text = []
+                            custom_text = []
                             for line in region.findAll("TextLine"):
+                                lineid_text.append(line['id'])
+                                custom_text.append(line['custom'])
                                 for t in line.findAll("Unicode"):
                                     region_text.append(t.text)
                             page_txt.append(region_text)
-
+                            line_txt.append(lineid_text)
+                            custom_txt.append(custom_text)
                             #crop out the image
                             cords = region.find('Coords')['points']
 
@@ -1108,15 +1118,16 @@ class TextSegmentation():
                             page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
                     except:
                         pass
-
                 full_text.append(page_txt)
+                lineIds.append(line_txt)
+                customs.append(custom_txt)
                 imgs.append(page_imgs)
 
                 #update progressbar
                 progress['value'] = 100*((c + 1)/len(doc))
                 progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
                 self.window.update()
-            return full_text, imgs
+            return full_text, lineIds, customs, imgs
         except:
             self.popupmsg("Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...")
 ###--------------------------------------------TR import functions--------------------------------------### 
