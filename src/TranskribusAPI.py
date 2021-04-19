@@ -405,7 +405,7 @@ class TextSegmentation():
         
         #create the default Header
         self.createDefaultHeader()
-        self.window.geometry('890x490')
+        self.window.geometry('890x430')
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
@@ -418,65 +418,71 @@ class TextSegmentation():
         textentryColId.grid(row=4, column=0,sticky=W)
         textentryColId.insert(END, '')
 
-
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
         
+        var1 = IntVar()
+        var1.set(1)
+        checkboxTR = Checkbutton(self.window, bg='white',font=self.inputFont, text="Text ist Name einer Textregion", variable=var1).grid(row=6, sticky=W)
         #TR to be searched
-        Label(self.window, text='Textregion suchen:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
+        Label(self.window, text='suchen:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
         textentryTrSearch = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentryTrSearch.grid(row=6, column=0,sticky=W)
-
+        textentryTrSearch.grid(row=8, column=0,sticky=W)
         textentryTrSearch.insert(END, '')
 
         
         #TR to be replaced
-        Label(self.window, text='Textregion ersetzen mit:', bg='white', font=self.inputFont).grid(row=5, column=1,sticky=W)
+        Label(self.window, text='ersetzen mit:', bg='white', font=self.inputFont).grid(row=7, column=1,sticky=W)
         textentryTrReplace = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentryTrReplace.grid(row=6, column=1,sticky=W)
-
+        textentryTrReplace.grid(row=8, column=1,sticky=W)
         textentryTrReplace.insert(END, '')
         
-         #create the button
-        self.replaceTrButton = Button(self.window,text='TR ersetzen starten', font = self.buttonFont, height = 2, width = 20,
-                                      command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(), "structure {type:" + textentryTrSearch.get() + ";}","structure {type:" + textentryTrReplace.get() + ";}"))
-
+        #starting page
+        Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=9, column=0,sticky=W)
+        textentryStartPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
+        textentryStartPage.grid(row=10, column=0,sticky=W)
+        textentryStartPage.insert(END, '1')
         
-        self.window.grid_rowconfigure(9, minsize=25)
+        #ending page
+        Label(self.window, text='End Seite:', bg='white', font=self.inputFont).grid(row=9, column=1,sticky=W)
+        textentryEndPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
+        textentryEndPage.grid(row=10, column=1,sticky=W)
+        textentryEndPage.insert(END, '-')
 
-        self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2)
 
-        
-        #Text to be searched
-        Label(self.window, text='Diese Funktion ist vorsichtig zu verwenden:', bg='white', font=self.inputFont).grid(row=12, column=0,sticky=W)
-        Label(self.window, text='Text in pagexml suchen:', bg='white', font=self.inputFont).grid(row=13, column=0,sticky=W)
-        textentrySearch = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentrySearch.grid(row=14, column=0,sticky=W)
-        textentrySearch.insert(END, '')
-        
-        #Text to be replaced
-        Label(self.window, text='Text in pagexml ersetzen mit:', bg='white', font=self.inputFont).grid(row=13, column=1,sticky=W)
-        textentryReplace = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentryReplace.grid(row=14, column=1,sticky=W)
-        textentryReplace.insert(END, '')
-        
-         #create the button
-        self.searchReplaceButton = Button(self.window,text='Text ersetzen starten', font = self.buttonFont, height = 2, width = 20,
-                                      command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(), textentrySearch.get(), textentryReplace.get()))
-        self.searchReplaceButton.place(x=330,y=430)
-        #self.window.grid_rowconfigure(12, minsize=25)
+        self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
+                    command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage,var1, textentryTrSearch.get(),textentryTrReplace.get()))
 
-        #self.searchReplaceButton.grid(row=25, rowspan = 2, columnspan = 2)
+        self.window.grid_rowconfigure(11, minsize=25)
+
+        self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
     
-    def searchReplacePagexml(self, colid, docid, sString, rString):
+    def searchReplacePagexml(self, colid, docid,textentryStartPage,textentryEndPage,isTr, sString, rString):
         doc = self.getDocumentR(colid, docid)['pageList']['pages']
-        startPage = 1
-        endPage = len(doc)
+        #setup start page
+        if isinstance(textentryStartPage, int):
+            startPage = textentryStartPage
+        else:
+            startPage = int(textentryStartPage.get())
+        
+        #define the endPages
+        if textentryEndPage.get() == "-":
+            textentryEndPage = len(doc)
+
+        #setup the endpage
+        if isinstance(textentryEndPage, int):
+            endPage = textentryEndPage
+        else:
+            endPage = int(textentryEndPage.get())
+
         #start progress bar
+        if isTr.get() == 1:
+            sString = "structure {type:" + sString + ";}"
+            rString = "structure {type:" + rString + ";}"
 
         progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
         progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
@@ -486,11 +492,11 @@ class TextSegmentation():
         progressText.grid(row=0, column=1,sticky=W)
         progressText.config(bg="white")
         self.window.update()
-        for x in range(startPage,endPage):
-
+        pages = range(startPage, endPage + 1)
+        for x in pages:
             self.searchReplaceInPage(colid,docid,x, sString, rString)
 
-            print("page " + str(x) + " done.")
+            print("page " + str(x) + " done. " + sString + " ersetzt mit " +rString +".")
             progress['value'] = 100*x/endPage
             progressText['text'] = "job progress {}%:".format(np.round(100*x/endPage,1))
             self.window.update()
@@ -542,17 +548,6 @@ class TextSegmentation():
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
         textentryDocId.insert(END, '')
-        #starting page
-        """Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
-        textentryStartPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentryStartPage.grid(row=6, column=0,sticky=W)
-        textentryStartPage.insert(END, '0')
-        
-        #ending page
-        Label(self.window, text='End Seite:', bg='white', font=self.inputFont).grid(row=5, column=1,sticky=W)
-        textentryEndPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
-        textentryEndPage.grid(row=6, column=1,sticky=W)
-        textentryEndPage.insert(END, '-')"""
                 
         #Models      
         Label(self.window, text='Modelle:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
@@ -1084,6 +1079,14 @@ class TextSegmentation():
                 line_txt = []
                 custom_txt = []
                 page_imgs = []
+                #page_xmls = []
+                #page_xmls_temp = page.split('structure {type:'+regionName+';}">')
+                #if len(page_xmls_temp) > 1:
+                    #for j in range(len(page_xmls_temp)):
+                        #if j%2 == 1:
+                            #xml_temp = page_xmls_temp[j].split('</TextRegion>')
+                            #print(xml_temp)
+                            #page_xmls.append(xml_temp[0])
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
@@ -1357,6 +1360,4 @@ class TextSegmentation():
 if __name__ == "__main__":
   
     TS = TextSegmentation()
-
-
-
+    
