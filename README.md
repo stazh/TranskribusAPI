@@ -8,7 +8,6 @@ The State Archives of the Canton of Zurich uses Transkribus to edit various coll
 - [Requirements](#requirements)
 - [Login](#login)
 - [Modules](#modules)
-- [Create exe file from script](#create-exe-file-from-script)
 
 ## Usage:
 
