@@ -19,6 +19,8 @@ from bs4 import BeautifulSoup
 from PIL import Image
 import urllib
 from tkinter import filedialog
+import tkinter
+from tkinter import messagebox
 
 class TextSegmentation():
     """
@@ -27,13 +29,13 @@ class TextSegmentation():
         to prevent lines crossing multiple text regions.
         
         The implementation makes usage of the TranskribusClient: https://github.com/Transkribus/TranskribusPyClient
-    	and is developed by Luca Ferrazzini and Rebekka Plüs
+        and is developed by Luca Ferrazzini and Rebekka Plüss
     """
     
     def __init__(self):
 
         """
-            This function initializes all important variables
+            This function initializes all important variables and starts the program
         """
         #intitialize the window
         self.window = Tk()
@@ -173,7 +175,7 @@ class TextSegmentation():
         
 
         if self.email == '' or self.password == '':
-            self.popupmsg("Login war nicht erfolgreich! \n Bitte erneut versuchen.")
+            tkinter.messagebox.showinfo("Fehler!","Login war nicht erfolgreich! \n Bitte erneut versuchen.")
             return
         
         self.saveLogin(self.email, self.password)
@@ -183,7 +185,7 @@ class TextSegmentation():
         self.sessionId = session.find("sessionId").text
         #check if login was successfull
         if self.sessionId == None:
-            popupmsg("Login war nicht erfolgreich! \n Bitte erneut versuchen.")
+            tkinter.messagebox.showinfo("Fehler!","Login war nicht erfolgreich! \n Bitte erneut versuchen.")
         else:
             self.startConfigurationWindow()
             
@@ -201,7 +203,7 @@ class TextSegmentation():
         if r.status_code == requests.codes.ok:
             return r.text
         else:
-            self.popupmsg("Login war nicht erfolgreich! \n Bitte erneut versuchen.")
+            tkinter.messagebox.showinfo("Fehler!","Login war nicht erfolgreich! \n Bitte erneut versuchen.")
             return
         
     ###-------------------------------------------Line detection functions------------------------------------------###
@@ -367,9 +369,9 @@ class TextSegmentation():
                         else:
                             os.system('python ../lib/TranskribusPyClient/src/TranskribusCommands/do_analyzeLayout.py {} {}/{} --doLineSeg --region={} --https_proxy={}'
                                 .format(colId, docId, page, region_ids, self.proxy["https"]))
-            self.popupmsg("Alle Jobs sind in Auftrag")
+            tkinter.messagebox.showinfo('Ende erreicht!','Alle Jobs sind in Auftrag.')
         except:
-            self.popupmsg("Ein Fehler bei den Jobs ist aufgetreten! Bitte erneut versuchen...")
+            tkinter.messagebox.showinfo('Fehler!','Ein Fehler ist aufgetreten! Bitte erneut versuchen...')
         
 
             
@@ -483,28 +485,30 @@ class TextSegmentation():
         if isTr.get() == 1:
             sString = "structure {type:" + sString + ";}"
             rString = "structure {type:" + rString + ";}"
-
-        progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-        progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+        MsgBox = tkinter.messagebox.askquestion ('Frage','Möchten Sie wirklich ' + sString + ' mit ' + rString + ' in Doc ' + docid + ' von Seite ' + str(startPage) + ' bis ' + str(endPage) + ' ersetzen?')
+        if MsgBox == 'yes':
+            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
         
         #set title to progressbar
-        progressText = Label(self.window, text="job progress 0%:".format(startPage * endPage),font=self.titleFont, bg='white')
-        progressText.grid(row=0, column=1,sticky=W)
-        progressText.config(bg="white")
-        self.window.update()
-        pages = range(startPage, endPage + 1)
-        for x in pages:
-            self.searchReplaceInPage(colid,docid,x, sString, rString)
-
-            print("page " + str(x) + " done. " + sString + " ersetzt mit " +rString +".")
-            progress['value'] = 100*x/endPage
-            progressText['text'] = "job progress {}%:".format(np.round(100*x/endPage,1))
+            progressText = Label(self.window, text="job progress 0%:".format(startPage * endPage),font=self.titleFont, bg='white')
+            progressText.grid(row=0, column=1,sticky=W)
+            progressText.config(bg="white")
             self.window.update()
-        progress['value'] = 100*endPage/endPage
-        progressText['text'] = "job progress {}%:".format(np.round(100*endPage/endPage,1))
+            pages = range(startPage, endPage + 1)
+            for x in pages:
+                self.searchReplaceInPage(colid,docid,x, sString, rString)
 
-        self.window.update()
-        print("Doc with id " + docid + " done.")
+                print("page " + str(x) + " done. " + sString + " ersetzt mit " +rString +".")
+                progress['value'] = 100*x/endPage
+                progressText['text'] = "job progress {}%:".format(np.round(100*x/endPage,1))
+                self.window.update()
+            progress['value'] = 100*endPage/endPage
+            progressText['text'] = "job progress {}%:".format(np.round(100*endPage/endPage,1))
+
+            self.window.update()
+            print("Doc with id " + docid + " done.")
+            tkinter.messagebox.showinfo('Ende erreicht!','Suchen/Ersetzen von ' + sString + ' mit ' + rString + ' in Doc ' + docid + ' von Seite ' + str(startPage) + ' bis ' + str(endPage) + ' beendet.')
     
     def searchReplaceInPage(self, colid, docid, pageNo, sString, rString):
         xml = self.getPage(colid,docid,pageNo)
@@ -530,7 +534,7 @@ class TextSegmentation():
 
         #create the default Header
         self.createDefaultHeader() 
-        self.window.geometry('890x410')
+        self.window.geometry('890x450')
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter für das Sampling definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
@@ -562,24 +566,28 @@ class TextSegmentation():
         self.loadModels = Button(self.window, text='Modelle abrufen', font = self.buttonFont, height = 1, width = 20,
                                       command = lambda: self.loadModelNames(textentryColId))
         self.loadModels.grid(row=8, column = 1)
+
+        imgExVar = IntVar()
+        imgExVar.set(1)
+        imgExport = Checkbutton(self.window, bg='white',font=self.inputFont, text="Bilder der Linien mit dem besten und schlechtesten CER-Wert exportieren", variable=imgExVar).grid(row=10, sticky=W)
         
         #Target directory
-        Label(self.window, text='Zielordner:', bg='white', font=self.inputFont).grid(row=9, column=0,sticky=W)
+        Label(self.window, text='Zielordner:', bg='white', font=self.inputFont).grid(row=12, column=0,sticky=W)
         
         self.TARGET_DIR = StringVar(value = '')
         targetDisplay = Label(self.window, textvariable=self.TARGET_DIR, width=50)
-        targetDisplay.grid(row=10, column=0, sticky=W)
+        targetDisplay.grid(row=13, column=0, sticky=W)
 
         browseButton = Button(text="Browse", command=lambda: self.browse_button(self.TARGET_DIR))
-        browseButton.grid(row=10, column=0, sticky=E)
+        browseButton.grid(row=13, column=0, sticky=E)
 
         #create the button
         self.submitJobButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
-                                      command = lambda: self.evaluateSelectedModels(textentryColId, textentryDocId, 0, "-"))
-        self.window.grid_rowconfigure(11, minsize=25)
+                                      command = lambda: self.evaluateSelectedModels(textentryColId, textentryDocId, imgExVar, 0, "-"))
+        self.window.grid_rowconfigure(14, minsize=25)
 
 
-        self.submitJobButton.grid(row=12, rowspan = 2, columnspan = 2)
+        self.submitJobButton.grid(row=15, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
         return
@@ -621,9 +629,9 @@ class TextSegmentation():
             for model in self.modelList:
                 self.optionModels['menu'].add_command(label=model, command=_setit(self.selectedModel, model))
         except:
-            self.popupmsg("Ein Fehler beim laden der Modellnamen ist aufgetreten!")
+            tkinter.messagebox.showinfo('Fehler!','Ein Fehler beim laden der Modellnamen ist aufgetreten!')
     
-    def evaluateSelectedModels(self,textentryColId, textentryDocId, textentryStartPage, textentryEndPage):
+    def evaluateSelectedModels(self,textentryColId, textentryDocId, imgExport, textentryStartPage, textentryEndPage):
         """
             This function starts the evaluation process by using the selected model for transcription,
             if no transcription is available. Note: If textentryDocId is == "" then the process is applied to all
@@ -643,16 +651,16 @@ class TextSegmentation():
             docIds = self.getDocIdsList(self.sessionId, textentryColId.get())
 
             for c, docId in enumerate(docIds):
-                self.evaluateModels(textentryColId, docId, textentryStartPage, textentryEndPage)
+                self.evaluateModels(textentryColId, docId, imgExport,textentryStartPage, textentryEndPage)
                 progress['value'] = 100*(c/len(docIds))
                 progressText['text'] = "job progress {}%:".format(np.round(100*(c/len(docIds))))
                 self.window.update()
         else:
-            self.evaluateModels(textentryColId, textentryDocId, textentryStartPage, textentryEndPage)
-        
+            self.evaluateModels(textentryColId, textentryDocId, imgExport,textentryStartPage, textentryEndPage)
+        tkinter.messagebox.showinfo("Ende erreicht!","Alle Samples evaluiert.")
         return
     
-    def evaluateModels(self, textentryColId, textentryDocId, textentryStartPage, textentryEndPage):
+    def evaluateModels(self, textentryColId, textentryDocId, imgExport,textentryStartPage, textentryEndPage):
         """
             This function evaluates a specific model on a specified document. 
             Defined through self.selectedModel.get() resp. textentryDocId.
@@ -680,9 +688,9 @@ class TextSegmentation():
                     charAmount_List.append(len(transcripts_GT[i]))
             wer_list = []
             cer_list = []
-            if not os.path.exists(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'):
+            if imgExport.get() == 1 and not os.path.exists(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'):
                 os.makedirs(self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/')
-            if not os.path.exists(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'):
+            if imgExport.get() == 1 and not os.path.exists(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'):
                 os.makedirs(self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/')
         #calculate wer and cer for every transcription a model produced
             if not (keys == None or keys_GT == None):
@@ -706,47 +714,48 @@ class TextSegmentation():
                     if cer_list[h] > cer_worst[0]:
                         cer_worst[0] = cer_list[h]
                         cer_worst[1] = h
-            #save best and worst cer as image and variable
-                image_worst_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_worst[1]]['url'])
-                image_best_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_best[1]]['url'])
-                soup_best = BeautifulSoup(pages[cer_best[1]], "xml")
-                soup_worst = BeautifulSoup(pages[cer_worst[1]], "xml")
-                for region in soup_best.findAll("TextLine"):
-                #crop out the image
-                    cords = region.find('Coords')['points']
-                    points = [c.split(",") for c in cords.split(" ")]
-                    maxX = -1000
-                    minX = 100000
-                    maxY = -1000
-                    minY = 100000
-                    for p in points:
-                        maxX = max(int(p[0]), maxX)
-                        minX = min(int(p[0]), minX)
-                        maxY = max(int(p[1]), maxY)
-                        minY = min(int(p[1]), minY)
-                    image_best = image_best_temp.crop((minX, minY, maxX,maxY))
-                for region in soup_worst.findAll("TextLine"):
-                #crop out the image
-                    cords = region.find('Coords')['points']
-                    points = [c.split(",") for c in cords.split(" ")]
-                    maxX = -1000
-                    minX = 100000
-                    maxY = -1000
-                    minY = 100000
-                    for p in points:
-                        maxX = max(int(p[0]), maxX)
-                        minX = min(int(p[0]), minX)
-                        maxY = max(int(p[1]), maxY)
-                        minY = min(int(p[1]), minY)
-                    image_worst = image_worst_temp.crop((minX, minY, maxX,maxY))
-                worst_cer = cer_worst[0]
-                best_cer = cer_best[0]
-                best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
-                worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
-                image_best.save(best_url)
-                image_worst.save(worst_url)
-
-            #check if excel file already exists
+                #save best and worst cer as image and variable if checkbox selected ---------
+                if imgExport.get() == 1:
+                    image_worst_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_worst[1]]['url'])
+                    image_best_temp = self.getImageFromUrl(self.getDocumentR(currentColId, currentDocId)['pageList']['pages'][cer_best[1]]['url'])
+                    soup_best = BeautifulSoup(pages[cer_best[1]], "xml")
+                    soup_worst = BeautifulSoup(pages[cer_worst[1]], "xml")
+                    for region in soup_best.findAll("TextLine"):
+                    #crop out the image
+                        cords = region.find('Coords')['points']
+                        points = [c.split(",") for c in cords.split(" ")]
+                        maxX = -1000
+                        minX = 100000
+                        maxY = -1000
+                        minY = 100000
+                        for p in points:
+                            maxX = max(int(p[0]), maxX)
+                            minX = min(int(p[0]), minX)
+                            maxY = max(int(p[1]), maxY)
+                            minY = min(int(p[1]), minY)
+                        image_best = image_best_temp.crop((minX, minY, maxX,maxY))
+                    for region in soup_worst.findAll("TextLine"):
+                    #crop out the image
+                        cords = region.find('Coords')['points']
+                        points = [c.split(",") for c in cords.split(" ")]
+                        maxX = -1000
+                        minX = 100000
+                        maxY = -1000
+                        minY = 100000
+                        for p in points:
+                            maxX = max(int(p[0]), maxX)
+                            minX = min(int(p[0]), minX)
+                            maxY = max(int(p[1]), maxY)
+                            minY = min(int(p[1]), minY)
+                        image_worst = image_worst_temp.crop((minX, minY, maxX,maxY))
+                    worst_cer = cer_worst[0]
+                    best_cer = cer_best[0]
+                    best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
+                    worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
+                    image_best.save(best_url)
+                    image_worst.save(worst_url)
+                #---------------------------------------------------------------------------------------
+                #check if excel file already exists
                 if not os.path.exists(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx'):
                 #create the excel file
                     pd.DataFrame().to_excel(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
@@ -757,17 +766,20 @@ class TextSegmentation():
                     sht1 = wb.sheets['Sheet1'] 
                 #init the column names
                     columns = ['doc.ID Sample']
-                    columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i), 'Best_CER{}'.format(i), 'Best_CER_Imag{}'.format(i), 'Worst_CER{}'.format(i), 'Worst_CER_Imag{}'.format(i)] for i in range(1,10)]))
-
+                    if imgExport.get() == 1:
+                        columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i), 'Best_CER{}'.format(i), 'Best_CER_Imag{}'.format(i), 'Worst_CER{}'.format(i), 'Worst_CER_Imag{}'.format(i)] for i in range(1,10)]))
+                    else:
+                        columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i)] for i in range(1,10)]))
                     sht1.range('A1').value = columns
                     sht1.range('A2').value = currentDocId
                     sht1.range('B2').value = np.sum(cer_list_gew)
                     sht1.range('C2').value = np.sum(wer_list_gew)
                     sht1.range('D2').value = self.selectedModel.get()
-                    sht1.range('E2').value = best_cer
-                    sht1.range('G2').value = worst_cer
-                    sht1.range('F2').value = '=HYPERLINK("' + best_url + '")'
-                    sht1.range('H2').value = '=HYPERLINK("' + worst_url + '")'
+                    if imgExport.get() == 1:
+                        sht1.range('E2').value = best_cer
+                        sht1.range('G2').value = worst_cer
+                        sht1.range('F2').value = '=HYPERLINK("' + best_url + '")'
+                        sht1.range('H2').value = '=HYPERLINK("' + worst_url + '")'
 
                 else:
                 #open the excel sheet if the file already exists
@@ -795,20 +807,23 @@ class TextSegmentation():
                         sht1.range('B{}'.format(currentRow)).value = np.sum(cer_list_gew)
                         sht1.range('C{}'.format(currentRow)).value = np.sum(wer_list_gew)
                         sht1.range('D{}'.format(currentRow)).value = self.selectedModel.get()
-                        sht1.range('E{}'.format(currentRow)).value = best_cer
-                        sht1.range('F{}'.format(currentRow)).value = '=HYPERLINK("' + best_url + '")'
-                        sht1.range('G{}'.format(currentRow)).value = worst_cer
-                        sht1.range('H{}'.format(currentRow)).value = '=HYPERLINK("' + worst_url + '")'
+                        if imgExport.get() == 1:
+                            sht1.range('E{}'.format(currentRow)).value = best_cer
+                            sht1.range('F{}'.format(currentRow)).value = '=HYPERLINK("' + best_url + '")'
+                            sht1.range('G{}'.format(currentRow)).value = worst_cer
+                            sht1.range('H{}'.format(currentRow)).value = '=HYPERLINK("' + worst_url + '")'
                     else:
                         values = sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value
-                        values[currentColumn:currentColumn + 6] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get(), best_cer, '=HYPERLINK("' + best_url + '")', worst_cer, '=HYPERLINK("' + worst_url + '")']
+                        if imgExport.get() == 1:
+                            values[currentColumn:currentColumn + 6] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get(), best_cer, '=HYPERLINK("' + best_url + '")', worst_cer, '=HYPERLINK("' + worst_url + '")']
+                        else:
+                            values[currentColumn:currentColumn + 2] = [np.sum(cer_list_gew), np.sum(wer_list_gew), self.selectedModel.get()]
                         sht1.range('A{}'.format(currentRow), 'ZZ{}'.format(currentRow)).value = values
             else:
-                self.popupmsg("Transkriptionen wurden nicht gefunden! Vorgang für Modell {} und Doc {} wird abgebrochen...".format(self.selectedModel.get(), currentDocId))
+                tkinter.messagebox.showinfo("!","Kein GT in Sample vorhanden! Vorgang für Modell {} und Doc {} wird abgebrochen...".format(self.selectedModel.get(), currentDocId))
             wb.save(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
         except:
-            self.popupmsg("Fehler bei  Modell {} und Doc {} aufgetreten. Vorgang wird abgebrochen.".format(self.selectedModel.get(), currentDocId))
-        wb.save(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
+            tkinter.messagebox.showinfo("!","Fehler bei  Modell {} und Doc {} aufgetreten. Vorgang wird abgebrochen.".format(self.selectedModel.get(), currentDocId))
         return
     
     
@@ -915,7 +930,7 @@ class TextSegmentation():
         if len(keys) == len(pages):
             return keys
         elif toolName == "GT":
-            self.popupmsg("Fehler! Nicht für alle Pages in Sample mit Docid " + str(docId) + " GT vorhanden.")
+            tkinter.messagebox.showinfo("Fehler!", "Nicht für alle Pages in Sample mit Docid " + str(docId) + " GT vorhanden.")
             return None
         else:
             #self.popupmsg("HTR müssen noch ausgeführt werden. Dies kann einige Zeit dauern...")
@@ -994,17 +1009,17 @@ class TextSegmentation():
     def startExtraction(self, colId, docId, regionName):
         
         if self.TARGET_DIR.get() == "":
-            self.popupmsg("Bitte wählen sie einen Zielpfad aus!")
+            tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie einen Zielpfad aus!')
             return
         
         docName = self.getDocNameFromId(colId, docId)
         text, lineids, customs, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
         
         #write results in excel
-        if os.path.exists(self.TARGET_DIR.get() + '/RegionExtraction.xlsx'):
-            os.remove(self.TARGET_DIR.get() + '/RegionExtraction.xlsx')
+        if os.path.exists(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx'):
+            os.remove(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx')
             
-        wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/RegionExtraction.xlsx')
+        wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx')
         sht1 = wb.add_worksheet()
         
         #init the column names
@@ -1047,6 +1062,7 @@ class TextSegmentation():
         wb.close()
         #delete the temporary folder for the images
         shutil.rmtree('tempImgs')
+        tkinter.messagebox.showinfo("Ende erreicht!","Textregion " + regionName + " aus Doc " + docId + " extrahiert.")
         return
 
     def extractRegionsTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
@@ -1132,7 +1148,7 @@ class TextSegmentation():
                 self.window.update()
             return full_text, lineIds, customs, imgs
         except:
-            self.popupmsg("Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...")
+            tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
 ###--------------------------------------------TR import functions--------------------------------------### 
     
     """def startImportTrWindow(self):
@@ -1292,7 +1308,7 @@ class TextSegmentation():
             return r.json()
         else:
             print(r)
-            self.popupmsg("Fehler bei der  Abfrage eines Dokumentes. Doc-ID " + str(docid) + " invalid?")
+            tkinter.messagebox.showinfo('Fehler!','Fehler bei der  Abfrage eines Dokumentes. Doc-ID ' + str(docid) + ' invalid?')
             return None
     
     def getDocuments(self, sid, colid):
@@ -1304,7 +1320,7 @@ class TextSegmentation():
             return r.json()
         else:
             print(r)
-            self.popupmsg("Fehler bei der Abfrage der Dokumentliste. Col-ID " + str(colid) + " invalid?")
+            tkinter.messagebox.showinfo('Fehler!','Fehler bei der Abfrage der Dokumentliste. Col-ID ' + str(colid) + ' invalid?')
             return None
 
     def getDocNameFromId(self, colId, docId):
@@ -1327,7 +1343,7 @@ class TextSegmentation():
             return r.text
         else:
             print(r)
-            self.popupmsg("Fehler bei der Abfrage einer Seite. Doc-ID " + str(docid) + " invalid oder Seitenzahl " + str(pageNo) + " ausserhalb des Bereichs?")
+            tkinter.messagebox.showinfo('Fehler!','Fehler bei der Abfrage einer Seite. Doc-ID ' + str(docid) + ' invalid oder Seitenzahl ' + str(pageNo) + ' ausserhalb des Bereichs.')
             return None
 
     def postPage(self, colid, docid, pageNo, xml):
@@ -1339,7 +1355,7 @@ class TextSegmentation():
             return True
         else:
             print(r)
-            self.popupmsg("Fehler beim posten einer Seite. Doc-ID " + str(docid) + " invalid oder Seitenzahl " + str(pageNo) + " ausserhalb des Bereichs?")
+            tkinter.messagebox.showinfo("Fehler!","Fehler beim posten einer Seite. Doc-ID " + str(docid) + " invalid oder Seitenzahl " + str(pageNo) + " ausserhalb des Bereichs?")
             return False
 
     def browse_button(self, variable):
