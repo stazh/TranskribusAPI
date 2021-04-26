@@ -987,6 +987,8 @@ class TextSegmentation():
         textentryExportTR.grid(row=6, column=0,sticky=W)
         textentryExportTR.insert(END, 'header')
         
+        exportLinien = IntVar()
+        checkboxLinie = Checkbutton(self.window, bg='white',font=self.inputFont, text="Zeilen der Textregion separiert exportieren", variable=exportLinien).grid(row=6, column=1,sticky=W)
         #Target directory
         Label(self.window, text='Zielordner:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
         
@@ -1000,20 +1002,23 @@ class TextSegmentation():
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.startExtraction(textentryColId.get(), textentryDocId.get()
-                                                                             , textentryExportTR.get()))
+                                                                             , textentryExportTR.get(), exportLinien))
         
         self.window.grid_rowconfigure(9, minsize=25)
 
         self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2) 
 
-    def startExtraction(self, colId, docId, regionName):
+    def startExtraction(self, colId, docId, regionName,exportLine):
         
         if self.TARGET_DIR.get() == "":
             tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie einen Zielpfad aus!')
             return
         
         docName = self.getDocNameFromId(colId, docId)
-        text, lineids, customs, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+        if exportLine.get() == 1:
+            text, nrOnPage, lineids, customs, imgs = self.extractRegionsLinesTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+        else:
+            text, lineids, customs, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
         
         #write results in excel
         if os.path.exists(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx'):
@@ -1031,34 +1036,50 @@ class TextSegmentation():
         
         row = 1
         
-        #set Image and Text column width
-        sht1.set_column(5, 5, 80)
-        sht1.set_column(4, 4, 60)
-        
         #this format is needed, such that we can write on multiple lines
         wrap = wb.add_format({'text_wrap': True})
         
         #folder for temp imgs:
         if not os.path.exists('tempImgs/'):
             os.makedirs("tempImgs")
-
+        #set Image and Text column width
+        sht1.set_column(5, 5, 50)
+        sht1.set_column(6, 6, 50)
+        sht1.set_column(4, 4, 50)
+        sht1.set_column(7, 7, 70)
+        if exportLine.get() == 1:
+            for page in range(len(text)):
+                for c in range(len(text[page])):
+                    sht1.set_row(row, 50)
+                    sht1.write(row, 0 , str(docId))
+                    sht1.write(row, 1, str(docName))
+                    sht1.write(row, 2, str(page + 1))
+                    sht1.write(row, 3, nrOnPage[page][c])
+                    sht1.write(row, 4, text[page][c])
+                    sht1.write(row, 5, lineids[page][c])
+                    sht1.write(row, 6, customs[page][c])
+                    #sht1.write(row, 6, xmls[page][c])
+                    imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
+                    # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
+                    sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
+                    row += 1
+        else:
         #write the results into the excel file
-        for page in range(len(text)):             
-            for c in range(len(text[page])):
-                sht1.set_row(row, 150)
-                sht1.write(row, 0 , str(docId))
-                sht1.write(row, 1, str(docName))
-                sht1.write(row, 2, str(page + 1))
-                sht1.write(row, 3, str(c + 1))
-                sht1.write(row, 4, '\n'.join(text[page][c]), wrap)
-                sht1.write(row, 5, '\n'.join(lineids[page][c]), wrap)
-                sht1.write(row, 6, '\n'.join(customs[page][c]), wrap)
-                #sht1.write(row, 6, xmls[page][c])
-                imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
-
-                # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
-                row += 1
+            for page in range(len(text)):             
+                for c in range(len(text[page])):
+                    sht1.set_row(row, 150)
+                    sht1.write(row, 0 , str(docId))
+                    sht1.write(row, 1, str(docName))
+                    sht1.write(row, 2, str(page + 1))
+                    sht1.write(row, 3, str(c + 1))
+                    sht1.write(row, 4, '\n'.join(text[page][c]), wrap)
+                    sht1.write(row, 5, '\n'.join(lineids[page][c]), wrap)
+                    sht1.write(row, 6, '\n'.join(customs[page][c]), wrap)
+                    #sht1.write(row, 6, xmls[page][c])
+                    imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
+                    # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
+                    sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
+                    row += 1
         wb.close()
         #delete the temporary folder for the images
         shutil.rmtree('tempImgs')
@@ -1095,14 +1116,6 @@ class TextSegmentation():
                 line_txt = []
                 custom_txt = []
                 page_imgs = []
-                #page_xmls = []
-                #page_xmls_temp = page.split('structure {type:'+regionName+';}">')
-                #if len(page_xmls_temp) > 1:
-                    #for j in range(len(page_xmls_temp)):
-                        #if j%2 == 1:
-                            #xml_temp = page_xmls_temp[j].split('</TextRegion>')
-                            #print(xml_temp)
-                            #page_xmls.append(xml_temp[0])
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
@@ -1147,6 +1160,84 @@ class TextSegmentation():
                 progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
                 self.window.update()
             return full_text, lineIds, customs, imgs
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
+
+    def extractRegionsLinesTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
+        try:
+            #start a progressbar
+            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+
+            #set title to progressbar
+            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+            progressText.grid(row=0, column=1,sticky=W)
+            progressText.config(bg="white")
+
+            self.window.update()
+
+            #get document
+            doc = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
+
+            #get the data that contains the images
+            docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
+
+            full_text = []
+            lineIds = []
+            customs = []
+            nrOnPage = []
+            imgs = []
+            nrOnPageCounter = 0
+            for c, page in enumerate(doc):
+                soup = BeautifulSoup(page, "xml")
+                page_txt = []
+                nrOnPage_txt = []
+                line_txt = []
+                custom_txt = []
+                page_imgs = []
+                page_img = self.getImageFromUrl(docConfig[c]['url'])
+                nrOnPageCounter = 0
+                for region in soup.findAll("TextRegion"):
+                    try:
+                        if regionName in region['custom']:
+                            nrOnPageCounter = nrOnPageCounter + 1
+                            for line in region.findAll("TextLine"):
+                                lineid_text = line['id']
+                                custom_text = line['custom']
+                                for t in line.findAll("Unicode"):
+                                    region_text = t.text
+                                cords = line.find('Coords')['points']
+                                points = [c.split(",") for c in cords.split(" ")]
+
+                                maxX = -1000
+                                minX = 100000
+                                maxY = -1000
+                                minY = 100000
+
+                                for p in points:
+                                    maxX = max(int(p[0]), maxX)
+                                    minX = min(int(p[0]), minX)
+                                    maxY = max(int(p[1]), maxY)
+                                    minY = min(int(p[1]), minY)
+                                nrOnPage_txt.append(str(nrOnPageCounter))
+                                page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
+                                page_txt.append(region_text)
+                                line_txt.append(lineid_text)
+                                custom_txt.append(custom_text)
+                            #crop out the image
+                    except:
+                        pass
+                full_text.append(page_txt)
+                nrOnPage.append(nrOnPage_txt)
+                lineIds.append(line_txt)
+                customs.append(custom_txt)
+                imgs.append(page_imgs)
+
+                #update progressbar
+                progress['value'] = 100*((c + 1)/len(doc))
+                progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
+                self.window.update()
+            return full_text, nrOnPage, lineIds, customs, imgs
         except:
             tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
 ###--------------------------------------------TR import functions--------------------------------------### 
