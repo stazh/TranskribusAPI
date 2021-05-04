@@ -156,7 +156,6 @@ class TextSegmentation():
         file.close()
         return
     
-    #start login process
     def login(self, textentryEmail, textentryPassword, proxyHost, proxyPort):
         """
             Establish a connection with the api and start a session.
@@ -209,7 +208,6 @@ class TextSegmentation():
     ###-------------------------------------------Line detection functions------------------------------------------###
         
     def startConfigurationWindow(self):
-
         """
             This window starts the line detection module and prepares all variables and functions which are necessary.
         """
