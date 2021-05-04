@@ -235,13 +235,11 @@ class TextSegmentation():
         textentryColId.grid(row=4, column=0,sticky=W)
         textentryColId.insert(END, '')
 
-
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
         textentryDocId.insert(END, '')
-
         
         #starting page
         Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
@@ -370,11 +368,8 @@ class TextSegmentation():
             tkinter.messagebox.showinfo('Ende erreicht!','Alle Jobs sind in Auftrag.')
         except:
             tkinter.messagebox.showinfo('Fehler!','Ein Fehler ist aufgetreten! Bitte erneut versuchen...')
-        
 
-            
 
-            
     def checkRunningJobs(self, colId, docId):
         #retrieve the job list from transkribus
         if self.proxy["https"] == 'http://:@:':
