@@ -1118,7 +1118,7 @@ class TextSegmentation():
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if (regionName in region['custom']) or (regionName in region['type']):
                             region_text = []
                             lineid_text = []
                             custom_text = []
@@ -1198,7 +1198,7 @@ class TextSegmentation():
                 nrOnPageCounter = 0
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if (regionName in region['custom']) or (regionName in region['type']):
                             nrOnPageCounter = nrOnPageCounter + 1
                             for line in region.findAll("TextLine"):
                                 lineid_text = line['id']
@@ -1287,22 +1287,72 @@ class TextSegmentation():
         if self.IMPORT_DIR.get() == "":
             tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie eine Exceldatei aus!')
             return
-        #write results in excel
-        if os.path.exists(self.IMPORT_DIR.get()):
-            df = pd.read_csv(self.IMPORT_DIR.get(), dtype=np.unicode)
-            try:
-                for i in range(0,df.shape[0]):
-                    print(df['Dokument Id'][i])
-                    print(df['SeitenNr'][i])
-                    print(df['LineIds'][i])
-                    print(df['Text'][i])
-                    print(df['Tag'][i])
-            except:
-                tkinter.messagebox.showinfo('Fehler!','Die Struktur des Import-Files scheint nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,LineIds,Text,Tag sein.')
-        else:
-            tkinter.messagebox.showinfo('Fehler!','Dieses Excel-File existiert nicht!')
-            
+        try:
+            if os.path.exists(self.IMPORT_DIR.get()):
+                f = open(self.IMPORT_DIR.get(), "r")
+                first_chars = f.read(12)
+                delimiter = first_chars[11]
+                df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode)
+                #start a progressbar
+                progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+                progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+                #set title to progressbar
+                progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+                progressText.grid(row=0, column=1,sticky=W)
+                progressText.config(bg="white")
+                self.window.update()
+                costoms = []
+                costoms.append(df[u'Tag'][0])
+                lineids = []
+                lineids.append(df[u'LineIds'][0])
+                linetexts = []
+                linetexts.append(df[u'Text'][0])
+                docid = df[u'Dokument Id'][0]
+                pageNo = df[u'SeitenNr'][0]
+                for i in range(1,df.shape[0]):
+                    if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
+                        costoms.append(df[u'Tag'][i])
+                        lineids.append(df[u'LineIds'][i])
+                        linetexts.append(df[u'Text'][i])
+                        docid = int(df[u'Dokument Id'][i])
+                        pageNo = int(df[u'SeitenNr'][i])
+                        if i == (df.shape[0]-1):
+                            self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
+                    else:
+                        self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
+                        costoms = []
+                        costoms.append(df[u'Tag'][i])
+                        lineids = []
+                        lineids.append(df[u'LineIds'][i])
+                        linetexts = []
+                        linetexts.append(df[u'Text'][i])
+                        docid = df[u'Dokument Id'][i]
+                        pageNo = df[u'SeitenNr'][i]
+                    #update progressbar
+                    progress['value'] = 100*((i + 1)/df.shape[0])
+                    progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
+                    self.window.update()
+                tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
+            else:
+                tkinter.messagebox.showinfo('Fehler!','Die ausgewählte Datei existiert nicht.')
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,LineIds,Text,Tag sein.')
         return
+
+    def importInPage(self, colid, docid, pageNo, lineids, linetexts, costoms):
+        xml = self.getPage(colid,docid,pageNo)
+        soup = BeautifulSoup(xml, "xml")
+        try:
+            for j in range(0,len(lineids)):
+                for line in soup.findAll("TextLine"):
+                    if lineids[j] in line['id']:
+                        line['custom'] = costoms[j]
+                        for t in line.findAll("Unicode"):
+                            t.string = linetexts[j]
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Beim Import in ' + str(docid) + ', Seite ' + str(pageNo) + ' ist in der Region ' + lineid + ' ein Fehler aufgetreten. Abbruch.')
+        self.postPage(colid, docid, pageNo, soup)
+        return True
 ###------------------------------------------------general funcitons----------------------------------------------###
     
 
