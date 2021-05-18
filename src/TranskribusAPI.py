@@ -21,6 +21,7 @@ import urllib
 from tkinter import filedialog
 import tkinter
 from tkinter import messagebox
+import csv
 
 class TextSegmentation():
     """
@@ -1112,7 +1113,7 @@ class TextSegmentation():
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if (regionName in region['custom']) or (regionName in region['type']):
                             region_text = []
                             lineid_text = []
                             custom_text = []
@@ -1192,7 +1193,7 @@ class TextSegmentation():
                 nrOnPageCounter = 0
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if (regionName in region['custom']) or (regionName in region['type']):
                             nrOnPageCounter = nrOnPageCounter + 1
                             for line in region.findAll("TextLine"):
                                 lineid_text = line['id']
@@ -1235,24 +1236,118 @@ class TextSegmentation():
             tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
 ###--------------------------------------------TR import functions--------------------------------------### 
     
-    """def startImportTrWindow(self):
+    def startImportTrWindow(self):
         
         self.window.destroy()
         
         #start the configuration window
         self.window = Tk()
-        self.window.title('Transkribus Textregionen suchen/ersetzen')
+        self.window.title('Transkribus Import')
         self.window.configure(bg='white')
         
         #create the default Header
         self.createDefaultHeader()
+        self.window.geometry('890x400')
         
         #Set the instruction title
         titleText = Label(self.window, text="Bitte die Parameter definieren:",font=self.titleFont, bg='white')
         titleText.grid(row=2, column=0,sticky=W)
-        titleText.config(bg="white")"""
+        titleText.config(bg="white")   
+        
+        #collection id
+        Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
+        textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
+        textentryColId.grid(row=4, column=0,sticky=W)
+        textentryColId.insert(END, '')
+
+        #Target directory
+        Label(self.window, text='Excel mit Importdaten auswählen:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
+        
+        self.IMPORT_DIR = StringVar(value = '')
+        targetDisplay = Label(self.window, textvariable=self.IMPORT_DIR, width=50)
+        targetDisplay.grid(row=6, column=0, sticky=W)
+
+        browseButton = Button(text="Browse", command=lambda: self.browse_file_button(self.IMPORT_DIR))
+        browseButton.grid(row=6, column=0, sticky=E)
+        
+        #create the button
+        self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
+                                      command = lambda: self.startImport(textentryColId.get()))
+        
+        self.window.grid_rowconfigure(9, minsize=25)
+
+        self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2) 
     
-    
+    def startImport(self, colid):
+        if self.IMPORT_DIR.get() == "":
+            tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie eine Exceldatei aus!')
+            return
+        try:
+            if os.path.exists(self.IMPORT_DIR.get()):
+                f = open(self.IMPORT_DIR.get(), "r")
+                first_chars = f.read(12)
+                delimiter = first_chars[11]
+                df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode)
+                #start a progressbar
+                progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+                progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+                #set title to progressbar
+                progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+                progressText.grid(row=0, column=1,sticky=W)
+                progressText.config(bg="white")
+                self.window.update()
+                costoms = []
+                costoms.append(df[u'Tag'][0])
+                lineids = []
+                lineids.append(df[u'LineIds'][0])
+                linetexts = []
+                linetexts.append(df[u'Text'][0])
+                docid = df[u'Dokument Id'][0]
+                pageNo = df[u'SeitenNr'][0]
+                for i in range(1,df.shape[0]):
+                    if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
+                        costoms.append(df[u'Tag'][i])
+                        lineids.append(df[u'LineIds'][i])
+                        linetexts.append(df[u'Text'][i])
+                        docid = int(df[u'Dokument Id'][i])
+                        pageNo = int(df[u'SeitenNr'][i])
+                        if i == (df.shape[0]-1):
+                            self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
+                    else:
+                        self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
+                        costoms = []
+                        costoms.append(df[u'Tag'][i])
+                        lineids = []
+                        lineids.append(df[u'LineIds'][i])
+                        linetexts = []
+                        linetexts.append(df[u'Text'][i])
+                        docid = df[u'Dokument Id'][i]
+                        pageNo = df[u'SeitenNr'][i]
+                    #update progressbar
+                    progress['value'] = 100*((i + 1)/df.shape[0])
+                    progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
+                    self.window.update()
+                tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
+            else:
+                tkinter.messagebox.showinfo('Fehler!','Die ausgewählte Datei existiert nicht.')
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,LineIds,Text,Tag sein.')
+        return
+
+    def importInPage(self, colid, docid, pageNo, lineids, linetexts, costoms):
+        xml = self.getPage(colid,docid,pageNo)
+        soup = BeautifulSoup(xml, "xml")
+        try:
+            for j in range(0,len(lineids)):
+                for line in soup.findAll("TextLine"):
+                    if lineids[j] in line['id']:
+                        line['custom'] = costoms[j]
+                        for t in line.findAll("Unicode"):
+                            t.string = linetexts[j]
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Beim Import in ' + str(docid) + ', Seite ' + str(pageNo) + ' ist in der Region ' + lineid + ' ein Fehler aufgetreten. Abbruch.')
+        self.postPage(colid, docid, pageNo, soup)
+        return True
 ###------------------------------------------------general funcitons----------------------------------------------###
     
 
@@ -1356,30 +1451,30 @@ class TextSegmentation():
         self.lineSegButton = Button(self.window,text='Linienerkennung', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startConfigurationWindow)
         #self.lineSegButton.grid(row=1,column = 0, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.lineSegButton.place(x=110, y=130, width=185, height=20)
+        self.lineSegButton.place(x=110, y=120, width=185, height=25)
         #Set the button for renaming textregions
 
         self.replaceTrButton = Button(self.window,text='Suchen/Ersetzen', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startSearchAndReplaceWindow)
 
         #self.replaceTrButton.grid(row=1,column = 1, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.replaceTrButton.place(x=305, y=130, width=185, height=20)
+        self.replaceTrButton.place(x=305, y=120, width=185, height=25)
         
         #Set the button for Sampling
         self.modelEvalButton = Button(self.window,text='Sampling', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startSamplesWindow)
         #self.modelEvalButton.grid(row=1, column = 2, rowspan = 1, columnspan = 1, sticky = W+E)
-        self.modelEvalButton.place(x=500, y=130, width=185, height=20)
+        self.modelEvalButton.place(x=500, y=120, width=185, height=25)
         
         #Set the button for Textregion Export
         self.TrExportButton = Button(self.window,text='Export TR-Text', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startExportTrWindow)
-        self.TrExportButton.place(x=695, y=130, width=185, height=20)
+        self.TrExportButton.place(x=695, y=120, width=185, height=25)
         
         #Set the button for Textregion Import
-        """self.TrImportButton = Button(self.window,text='Import TR-Text', font = self.buttonFont, height = 1, width = 40,
+        self.TrImportButton = Button(self.window,text='Import TR-Text', font = self.buttonFont, height = 1, width = 40,
                                       command = self.startImportTrWindow)
-        self.TrImportButton.place(x=730, y=130, width=120, height=20)"""
+        self.TrImportButton.place(x=695, y=150, width=185, height=25)
         
     def getDocumentR(self, colid, docid):
 
@@ -1446,6 +1541,12 @@ class TextSegmentation():
         # Allow user to select a directory and store it in global var
         # called folder_path
         filename = filedialog.askdirectory()
+        variable.set(filename)
+
+    def browse_file_button(self, variable):
+        # Allow user to select a directory and store it in global var
+        # called folder_path
+        filename = filedialog.askopenfilename()
         variable.set(filename)
 
     def popupmsg(self, msg):
