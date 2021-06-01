@@ -1113,7 +1113,7 @@ class TextSegmentation():
                 page_img = self.getImageFromUrl(docConfig[c]['url'])
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if (regionName in region['custom']) or (regionName in region['type']):
+                        if regionName in region['custom']:
                             region_text = []
                             lineid_text = []
                             custom_text = []
@@ -1193,7 +1193,7 @@ class TextSegmentation():
                 nrOnPageCounter = 0
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if (regionName in region['custom']) or (regionName in region['type']):
+                        if regionName in region['custom']:
                             nrOnPageCounter = nrOnPageCounter + 1
                             for line in region.findAll("TextLine"):
                                 lineid_text = line['id']
