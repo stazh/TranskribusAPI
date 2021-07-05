@@ -1010,19 +1010,16 @@ class TextSegmentation():
         
         docName = self.getDocNameFromId(colId, docId)
         if exportLine.get() == 1:
-            text, nrOnPage, lineids, customs, imgs = self.extractRegionsLinesTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+            text, nrOnPage, ids, customs, imgs = self.extractRegionsLinesTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+            wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/' + str(docName) + '_RegionExtraction'+'_'+ regionName +'_lines.xlsx')
         else:
-            text, lineids, customs, imgs = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
-        
-        #write results in excel
-        if os.path.exists(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx'):
-            os.remove(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx')
-            
-        wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/RegionExtraction'+'_'+ docId +'_'+ regionName +'.xlsx')
+            text, nrOnPage, ids, customs, imgs,pageNr = self.extractRegionsTextandImage(colId, docId, 0, '-', 'LAST', regionName)
+            wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/' + str(docName) + '_RegionExtraction'+'_'+ regionName +'_regions.xlsx')
+
         sht1 = wb.add_worksheet()
         
         #init the column names
-        columns = ['Dokument Id', 'Dokument Name', 'SeitenNr', 'Nummer auf Seite', 'Text', 'LineIds','Customs','Bild']
+        columns = ['Dokument Id', 'Dokument Name', 'SeitenNr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs','Bild']
         
         #write the first entry together with the columns header
         for i, col in enumerate(columns):
@@ -1050,7 +1047,7 @@ class TextSegmentation():
                     sht1.write(row, 2, str(page + 1))
                     sht1.write(row, 3, nrOnPage[page][c])
                     sht1.write(row, 4, text[page][c])
-                    sht1.write(row, 5, lineids[page][c])
+                    sht1.write(row, 5, ids[page][c])
                     sht1.write(row, 6, customs[page][c])
                     #sht1.write(row, 6, xmls[page][c])
                     imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
@@ -1059,21 +1056,20 @@ class TextSegmentation():
                     row += 1
         else:
         #write the results into the excel file
-            for page in range(len(text)):             
-                for c in range(len(text[page])):
-                    sht1.set_row(row, 150)
-                    sht1.write(row, 0 , str(docId))
-                    sht1.write(row, 1, str(docName))
-                    sht1.write(row, 2, str(page + 1))
-                    sht1.write(row, 3, str(c + 1))
-                    sht1.write(row, 4, '\n'.join(text[page][c]), wrap)
-                    sht1.write(row, 5, '\n'.join(lineids[page][c]), wrap)
-                    sht1.write(row, 6, '\n'.join(customs[page][c]), wrap)
+            for c in range(len(text)):
+                sht1.set_row(row, 150)
+                sht1.write(row, 0 , str(docId))
+                sht1.write(row, 1, str(docName))
+                sht1.write(row, 2, pageNr[c])
+                sht1.write(row, 3,nrOnPage[c])
+                sht1.write(row, 4, '\n'.join(text[c]),wrap)
+                sht1.write(row, 5, ids[c])
+                sht1.write(row, 6, customs[c])
                     #sht1.write(row, 6, xmls[page][c])
-                    imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
+                imgs[c].save('tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]))
                     # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                    sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
-                    row += 1
+                sht1.insert_image(row, 7,'tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]),{'x_scale': 0.3, 'y_scale': 0.3})
+                row += 1
         wb.close()
         #delete the temporary folder for the images
         shutil.rmtree('tempImgs')
@@ -1081,81 +1077,80 @@ class TextSegmentation():
         return
 
     def extractRegionsTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
-        try:
+        #try:
             #start a progressbar
-            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+        progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+        progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
 
             #set title to progressbar
-            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
-            progressText.grid(row=0, column=1,sticky=W)
-            progressText.config(bg="white")
+        progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+        progressText.grid(row=0, column=1,sticky=W)
+        progressText.config(bg="white")
 
-            self.window.update()
+        self.window.update()
 
             #get document
-            doc = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
+        doc = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
 
             #get the data that contains the images
-            docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
+        docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
+        page_txt = []
+        page_nr_txt = []
+        nrOnPage_txt = []
+        trid_txt = []
+        custom_txt = []
+        page_imgs = []
+        nrOnPageCounter = 0
+        for c, page in enumerate(doc):
+            soup = BeautifulSoup(page, "xml")
+            page_img = self.getImageFromUrl(docConfig[c]['url'])
+            page_nr = docConfig[c]['pageNr']
+            nrOnPageCounter = 0
+            for region in soup.findAll("TextRegion"):
+                if regionName in region['custom']:
+                    nrOnPageCounter = nrOnPageCounter + 1
+                    trid_text = region['id']
+                    custom_text = region['custom']
+                    region_text = []
+                    for line in region.findAll("TextLine"):
+                        for t in line.findAll("Unicode"):
+                            region_text.append(t.text)
+                    cords = region.find('Coords')['points']
+                    points = [c.split(",") for c in cords.split(" ")]
 
-            full_text = []
-            lineIds = []
-            customs = []
-            imgs = []
+                    maxX = -1000
+                    minX = 100000
+                    maxY = -1000
+                    minY = 100000
 
-            for c, page in enumerate(doc):
-                soup = BeautifulSoup(page, "xml")
-                page_txt = []
-                line_txt = []
-                custom_txt = []
-                page_imgs = []
-                page_img = self.getImageFromUrl(docConfig[c]['url'])
-                for region in soup.findAll("TextRegion"):
-                    try:
-                        if regionName in region['custom']:
-                            region_text = []
-                            lineid_text = []
-                            custom_text = []
-                            for line in region.findAll("TextLine"):
-                                lineid_text.append(line['id'])
-                                custom_text.append(line['custom'])
-                                for t in line.findAll("Unicode"):
-                                    region_text.append(t.text)
-                            page_txt.append(region_text)
-                            line_txt.append(lineid_text)
-                            custom_txt.append(custom_text)
+                    for p in points:
+                        maxX = max(int(p[0]), maxX)
+                        minX = min(int(p[0]), minX)
+                        maxY = max(int(p[1]), maxY)
+                        minY = min(int(p[1]), minY)
+                    nrOnPage_txt.append(str(nrOnPageCounter))
+                    page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
+                    page_txt.append(region_text)
+                    trid_txt.append(trid_text)
+                    custom_txt.append(custom_text)
+                    page_nr_txt.append(page_nr)
                             #crop out the image
-                            cords = region.find('Coords')['points']
-
-                            points = [c.split(",") for c in cords.split(" ")]
-
-                            maxX = -1000
-                            minX = 100000
-                            maxY = -1000
-                            minY = 100000
-
-                            for p in points:
-                                maxX = max(int(p[0]), maxX)
-                                minX = min(int(p[0]), minX)
-                                maxY = max(int(p[1]), maxY)
-                                minY = min(int(p[1]), minY)
-
-                            page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
-                    except:
-                        pass
-                full_text.append(page_txt)
-                lineIds.append(line_txt)
-                customs.append(custom_txt)
-                imgs.append(page_imgs)
+                #except:
+                    #pass
+            #full_text.append(page_txt)
+            #nrOnPage.append(nrOnPage_txt)
+            #TrIds.append(trid_txt)
+            #customs.append(custom_txt)
+            #imgs.append(page_imgs)
 
                 #update progressbar
-                progress['value'] = 100*((c + 1)/len(doc))
-                progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
-                self.window.update()
-            return full_text, lineIds, customs, imgs
-        except:
-            tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
+            progress['value'] = 100*((c + 1)/len(doc))
+            progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
+            self.window.update()
+
+        return page_txt, nrOnPage_txt, trid_txt, custom_txt, page_imgs,page_nr_txt
+        #except:
+            #tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
 
     def extractRegionsLinesTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
         try:
@@ -1177,7 +1172,7 @@ class TextSegmentation():
             docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
 
             full_text = []
-            lineIds = []
+            ids = []
             customs = []
             nrOnPage = []
             imgs = []
@@ -1223,7 +1218,7 @@ class TextSegmentation():
                         pass
                 full_text.append(page_txt)
                 nrOnPage.append(nrOnPage_txt)
-                lineIds.append(line_txt)
+                ids.append(line_txt)
                 customs.append(custom_txt)
                 imgs.append(page_imgs)
 
@@ -1231,7 +1226,7 @@ class TextSegmentation():
                 progress['value'] = 100*((c + 1)/len(doc))
                 progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
                 self.window.update()
-            return full_text, nrOnPage, lineIds, customs, imgs
+            return full_text, nrOnPage, ids, customs, imgs
         except:
             tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
 ###--------------------------------------------TR import functions--------------------------------------### 
@@ -1260,8 +1255,11 @@ class TextSegmentation():
         textentryColId.grid(row=4, column=0,sticky=W)
         textentryColId.insert(END, '')
 
+        importTR = IntVar()
+        checkboxTR = Checkbutton(self.window, bg='white',font=self.inputFont, text="Import Textregionen (unangewählt = Linien)", variable=importTR).grid(row=4, column=1,sticky=W)
+
         #Target directory
-        Label(self.window, text='Excel mit Importdaten auswählen:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
+        Label(self.window, text='CSV mit Importdaten auswählen:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
         
         self.IMPORT_DIR = StringVar(value = '')
         targetDisplay = Label(self.window, textvariable=self.IMPORT_DIR, width=50)
@@ -1272,75 +1270,125 @@ class TextSegmentation():
         
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
-                                      command = lambda: self.startImport(textentryColId.get()))
+                                      command = lambda: self.startImport(textentryColId.get(), importTR))
         
         self.window.grid_rowconfigure(9, minsize=25)
 
         self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2) 
     
-    def startImport(self, colid):
+    def startImport(self, colid, isTR):
         if self.IMPORT_DIR.get() == "":
-            tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie eine Exceldatei aus!')
+            tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie eine CSV-Datei aus!')
             return
-        try:
-            if os.path.exists(self.IMPORT_DIR.get()):
-                f = open(self.IMPORT_DIR.get(), "r")
-                first_chars = f.read(12)
-                delimiter = first_chars[11]
-                df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode)
-                #start a progressbar
-                progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-                progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
-                #set title to progressbar
-                progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
-                progressText.grid(row=0, column=1,sticky=W)
-                progressText.config(bg="white")
-                self.window.update()
-                costoms = []
-                costoms.append(df[u'Tag'][0])
-                lineids = []
-                lineids.append(df[u'LineIds'][0])
-                linetexts = []
-                linetexts.append(df[u'Text'][0])
-                docid = df[u'Dokument Id'][0]
-                pageNo = df[u'SeitenNr'][0]
-                for i in range(1,df.shape[0]):
-                    if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
-                        costoms.append(df[u'Tag'][i])
-                        lineids.append(df[u'LineIds'][i])
-                        linetexts.append(df[u'Text'][i])
-                        docid = int(df[u'Dokument Id'][i])
-                        pageNo = int(df[u'SeitenNr'][i])
-                        if i == (df.shape[0]-1):
-                            self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
-                    else:
-                        self.importInPage(colid,docid,pageNo,lineids,linetexts,costoms)
-                        costoms = []
-                        costoms.append(df[u'Tag'][i])
-                        lineids = []
-                        lineids.append(df[u'LineIds'][i])
-                        linetexts = []
-                        linetexts.append(df[u'Text'][i])
-                        docid = df[u'Dokument Id'][i]
-                        pageNo = df[u'SeitenNr'][i]
-                    #update progressbar
-                    progress['value'] = 100*((i + 1)/df.shape[0])
-                    progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
-                    self.window.update()
-                tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
+        if os.path.exists(self.IMPORT_DIR.get()):
+            if isTR.get() == 1:
+                self.importTR(colid)
             else:
-                tkinter.messagebox.showinfo('Fehler!','Die ausgewählte Datei existiert nicht.')
+                self.importLines(colid)
+        else:
+            tkinter.messagebox.showinfo('Fehler!','Die ausgewählte Datei existiert nicht.')
+        return
+    def importLines(self, colid):
+        try:
+            f = open(self.IMPORT_DIR.get(), "r")
+            first_chars = f.read(12)
+            delimiter = first_chars[11]
+            df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode, encoding='unicode_escape')
+                #start a progressbar
+            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+                #set title to progressbar
+            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+            progressText.grid(row=0, column=1,sticky=W)
+            progressText.config(bg="white")
+            self.window.update()
+            costoms = []
+            costoms.append(df[u'Tag'][0])
+            ids = []
+            ids.append(df[u'Textregion Id'][0])
+            linetexts = []
+            linetexts.append(df[u'Text'][0])
+            docid = df[u'Dokument Id'][0]
+            pageNo = df[u'SeitenNr'][0]
+            for i in range(1,df.shape[0]):
+                if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
+                    costoms.append(df[u'Tag'][i])
+                    ids.append(df[u'Textregion Id'][i])
+                    linetexts.append(df[u'Text'][i])
+                    docid = int(df[u'Dokument Id'][i])
+                    pageNo = int(df[u'SeitenNr'][i])
+                    if i == (df.shape[0]-1):
+                        self.importInPage(colid,docid,pageNo,ids,linetexts,costoms)
+                else:
+                    self.importInPage(colid,docid,pageNo,ids,linetexts,costoms)
+                    costoms = []
+                    costoms.append(df[u'Tag'][i])
+                    ids = []
+                    ids.append(df[u'Textregion Id'][i])
+                    linetexts = []
+                    linetexts.append(df[u'Text'][i])
+                    docid = df[u'Dokument Id'][i]
+                    pageNo = df[u'SeitenNr'][i]
+                    #update progressbar
+                progress['value'] = 100*((i + 1)/df.shape[0])
+                progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
+                self.window.update()
+            tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
         except:
-            tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,LineIds,Text,Tag sein.')
+            tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,Textregion Id,Text,Tag sein.')
         return
 
-    def importInPage(self, colid, docid, pageNo, lineids, linetexts, costoms):
+    def importTR(self, colid):
+        try:
+            f = open(self.IMPORT_DIR.get(), "r")
+            first_chars = f.read(12)
+            delimiter = first_chars[11]
+            df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode, encoding='unicode_escape')
+            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+                #set title to progressbar
+            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+            progressText.grid(row=0, column=1,sticky=W)
+            progressText.config(bg="white")
+            self.window.update()
+            costoms = []
+            costoms.append(df[u'Tag'][0])
+            ids = []
+            ids.append(df[u'Textregion Id'][0])
+            docid = df[u'Dokument Id'][0]
+            pageNo = df[u'SeitenNr'][0]
+            for i in range(1,df.shape[0]):
+                if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
+                    costoms.append(df[u'Tag'][i])
+                    ids.append(df[u'Textregion Id'][i])
+                    docid = int(df[u'Dokument Id'][i])
+                    pageNo = int(df[u'SeitenNr'][i])
+                    if i == (df.shape[0]-1):
+                        self.importInPage(colid,docid,pageNo,ids,costoms)
+                else:
+                    self.importInPage(colid,docid,pageNo,ids,costoms)
+                    costoms = []
+                    costoms.append(df[u'Tag'][i])
+                    ids = []
+                    ids.append(df[u'ids'][i])
+                    docid = df[u'Dokument Id'][i]
+                    pageNo = df[u'SeitenNr'][i]
+                    #update progressbar
+                progress['value'] = 100*((i + 1)/df.shape[0])
+                progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
+                self.window.update()
+            tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
+        except:
+            tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,Textregion Id,Tag sein.')
+        return
+
+    def importInPage(self, colid, docid, pageNo, ids, linetexts, costoms):
         xml = self.getPage(colid,docid,pageNo)
         soup = BeautifulSoup(xml, "xml")
         try:
-            for j in range(0,len(lineids)):
+            for j in range(0,len(ids)):
                 for line in soup.findAll("TextLine"):
-                    if lineids[j] in line['id']:
+                    if ids[j] in line['id']:
                         line['custom'] = costoms[j]
                         for t in line.findAll("Unicode"):
                             t.string = linetexts[j]
