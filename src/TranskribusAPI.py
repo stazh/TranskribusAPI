@@ -628,7 +628,11 @@ class TextSegmentation():
             if no transcription is available. Note: If textentryDocId is == "" then the process is applied to all
             documents inside the defined collection.
         """
-        
+        MsgBox = tkinter.messagebox.askquestion ('Frage','Ist die Collection ' + textentryColId.get() + ' wirklich eine Sample-Collection?')
+        if MsgBox == 'yes':
+            pass
+        else:
+            return
         if textentryDocId.get() == "":
             #start progress bar
             progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
@@ -1225,6 +1229,7 @@ class TextSegmentation():
                             for line in region.findAll("TextLine"):
                                 lineid_text = line['id']
                                 custom_text = line['custom']
+                                region_text = ""
                                 for t in line.findAll("Unicode"):
                                     region_text = t.text
                                 cords = line.find('Coords')['points']
@@ -1389,12 +1394,10 @@ class TextSegmentation():
             self.window.update()
             costoms = []
             costoms.append(df[u'Tag'][0])
-
             ids = []
             ids.append(df[u'Textregion Id'][0])
             docid = df[u'Dokument Id'][0]
             pageNo = df[u'SeitenNr'][0]
-
             if df.shape[0] == 1:
                 self.importTrInPage(colid,docid,pageNo,ids,costoms)
             for i in range(1,df.shape[0]):
@@ -1410,7 +1413,7 @@ class TextSegmentation():
                     costoms = []
                     costoms.append(df[u'Tag'][i])
                     ids = []
-                    ids.append(df[u'ids'][i])
+                    ids.append(df[u'Textregion Id'][i])
                     docid = df[u'Dokument Id'][i]
                     pageNo = df[u'SeitenNr'][i]
                     #update progressbar
