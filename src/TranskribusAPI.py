@@ -1376,47 +1376,47 @@ class TextSegmentation():
 
     def importTR(self, colid):
         try:
-           f = open(self.IMPORT_DIR.get(), "r")
-           first_chars = f.read(12)
-           delimiter = first_chars[11]
-           df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode, encoding='unicode_escape')
-           progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-           progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+            f = open(self.IMPORT_DIR.get(), "r")
+            first_chars = f.read(12)
+            delimiter = first_chars[11]
+            df = pd.read_csv(self.IMPORT_DIR.get(), delimiter=delimiter, dtype=np.unicode, encoding='unicode_escape')
+            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
+            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
                 #set title to progressbar
-           progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
-           progressText.grid(row=0, column=1,sticky=W)
-           progressText.config(bg="white")
-           self.window.update()
-           costoms = []
-           costoms.append(df[u'Tag'][0])
+            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
+            progressText.grid(row=0, column=1,sticky=W)
+            progressText.config(bg="white")
+            self.window.update()
+            costoms = []
+            costoms.append(df[u'Tag'][0])
 
-           ids = []
-           ids.append(df[u'Textregion Id'][0])
-           docid = df[u'Dokument Id'][0]
-           pageNo = df[u'SeitenNr'][0]
+            ids = []
+            ids.append(df[u'Textregion Id'][0])
+            docid = df[u'Dokument Id'][0]
+            pageNo = df[u'SeitenNr'][0]
 
-           if df.shape[0] == 1:
-              self.importTrInPage(colid,docid,pageNo,ids,costoms)
-           for i in range(1,df.shape[0]):
-               if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
-                   costoms.append(df[u'Tag'][i])
-                   ids.append(df[u'Textregion Id'][i])
-                   docid = int(df[u'Dokument Id'][i])
-                   pageNo = int(df[u'SeitenNr'][i])
-                   if i == (df.shape[0]-1):
-                       self.importTrInPage(colid,docid,pageNo,ids,costoms)
-               else:
-                   self.importTrInPage(colid,docid,pageNo,ids,costoms)
-                   costoms = []
-                   costoms.append(df[u'Tag'][i])
-                   ids = []
-                   ids.append(df[u'ids'][i])
-                   docid = df[u'Dokument Id'][i]
-                   pageNo = df[u'SeitenNr'][i]
+            if df.shape[0] == 1:
+                self.importTrInPage(colid,docid,pageNo,ids,costoms)
+            for i in range(1,df.shape[0]):
+                if int(df[u'SeitenNr'][i-1]) == int(df[u'SeitenNr'][i]):
+                    costoms.append(df[u'Tag'][i])
+                    ids.append(df[u'Textregion Id'][i])
+                    docid = int(df[u'Dokument Id'][i])
+                    pageNo = int(df[u'SeitenNr'][i])
+                    if i == (df.shape[0]-1):
+                        self.importTrInPage(colid,docid,pageNo,ids,costoms)
+                else:
+                    self.importTrInPage(colid,docid,pageNo,ids,costoms)
+                    costoms = []
+                    costoms.append(df[u'Tag'][i])
+                    ids = []
+                    ids.append(df[u'ids'][i])
+                    docid = df[u'Dokument Id'][i]
+                    pageNo = df[u'SeitenNr'][i]
                     #update progressbar
-               progress['value'] = 100*((i + 1)/df.shape[0])
-               progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
-               self.window.update()
+                progress['value'] = 100*((i + 1)/df.shape[0])
+                progressText['text'] = "job progress {}%:".format(np.round(100*((i + 1)/df.shape[0]),1))
+                self.window.update()
             tkinter.messagebox.showinfo("Ende erreicht!","Daten aus csv importiert!")
         except:
             tkinter.messagebox.showinfo('Fehler!','Mit dem Import-File scheint etwas nicht zu stimmen. Es müsste ein csv mit den Feldern Dokument Id,SeitenNr,Textregion Id,Tag sein.')
