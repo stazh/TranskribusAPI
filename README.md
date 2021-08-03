@@ -7,7 +7,11 @@ The State Archives of the Canton of Zurich uses Transkribus to edit various coll
 - [Usage](#usage)
 - [Requirements](#requirements)
 - [Login](#login)
-- [Modules](#modules)
+- [Module Line Detection](#module-line-detection)
+- [Module Search and Replace](#module-search-and-replace)
+- [Module Sampling](#module-sampling)
+- [Module Export text region](#module-export-text-region)
+- [Module Import](#module-import)
 
 ## Usage:
 
