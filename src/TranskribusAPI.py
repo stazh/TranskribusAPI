@@ -979,7 +979,7 @@ class TextSegmentation():
         textentryDocId.grid(row=4, column=1,sticky=W)
         
         #TR to be searched
-        Label(self.window, text='zu exportierende Textregion:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
+        Label(self.window, text='zu exportierende Textregion (leer = alle):', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
         textentryExportTR = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryExportTR.grid(row=6, column=0,sticky=W)
         textentryExportTR.insert(END, 'header')
@@ -1135,7 +1135,7 @@ class TextSegmentation():
                 nrOnPageCounter = 0
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if regionName in region['custom'] or regionName == "":
                             nrOnPageCounter = nrOnPageCounter + 1
                             trid_text = region['id']
                             custom_text = region['custom']
@@ -1224,7 +1224,7 @@ class TextSegmentation():
                 nrOnPageCounter = 0
                 for region in soup.findAll("TextRegion"):
                     try:
-                        if regionName in region['custom']:
+                        if regionName in region['custom'] or regionName == "":
                             nrOnPageCounter = nrOnPageCounter + 1
                             for line in region.findAll("TextLine"):
                                 lineid_text = line['id']
