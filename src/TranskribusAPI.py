@@ -599,7 +599,7 @@ class TextSegmentation():
         for i in range(len(models)):
             models[i] = models[i].replace('</', '')
             modelsId[i] = modelsId[i].replace('</', '')
-            modelsProvider[i] = modelsId[i].replace('</', '')
+            modelsProvider[i] = modelsProvider[i].replace('</', '')
         modelsIdMap = dict(zip(models,modelsId))
         modelsProviderMap = dict(zip(models, modelsProvider))
         models.sort()
@@ -852,8 +852,7 @@ class TextSegmentation():
                 os.system('python ../lib/TranskribusPyClient/src/TranskribusCommands/do_htrRnn.py {} None {} --docid {}'.format(self.modelsIdMap[toolName], colId, docId))
             else:
                 os.system('python ../lib/TranskribusPyClient/src/TranskribusCommands/do_htrRnn.py {} None {} --docid {} --https_proxy={}'.format(self.modelsIdMap[toolName], colId, docId, self.proxy["https"]))
-
-                  
+             
         return
     
     def getDocTranscript(self, colId, docId, textentryStartPage, textentryEndPage, toolName):
@@ -917,7 +916,7 @@ class TextSegmentation():
                         break
                 else:
                     try:
-                        if ts['toolName'][-len(toolName):] == toolName:
+                        if toolName in ts['toolName']:
                             keys.append(ts['key'])
                             break
                     except:
@@ -1498,7 +1497,7 @@ class TextSegmentation():
                             break
                     else:
                         try:
-                            if ts['toolName'][-len(toolName):] == toolName:
+                            if toolName in ts['toolName']:
                                 url = ts['url']
                                 break
                         except:
