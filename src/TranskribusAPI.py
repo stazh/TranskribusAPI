@@ -633,7 +633,6 @@ class TextSegmentation():
         self.modelsRaw = r.text
         modelsId = r.text.split('htrId>')[1::2]
         models = r.text.split('name>')[1::2]
-
         modelsProvider = r.text.split('provider>')[1::2]
         for i in range(len(models)):
             models[i] = models[i].replace('</', '')
@@ -653,7 +652,6 @@ class TextSegmentation():
             self.sampleCol = colId
 
             self.modelList, self.modelsIdMap, self.modelProvMap = self.getModelsList(colId)
-            self.modelList = list(set(self.modelList))
             self.optionModels['menu'].delete(0, 'end')
 
             # Insert list of new options (tk._setit hooks them up to var)
@@ -787,8 +785,8 @@ class TextSegmentation():
                         image_worst = image_worst_temp.crop((minX, minY, maxX,maxY))
                     worst_cer = cer_worst[0]
                     best_cer = cer_best[0]
-                    best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
-                    worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ str(currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
+                    best_url = self.TARGET_DIR.get() + '/Images_best_cer_' + self.selectedModel.get() + '/'+ self.getDocNameFromId(currentColId, currentDocId) +'_CER_' + str(best_cer) + '_Page_'+str(cer_best[1]+1) +'.jpg'
+                    worst_url = self.TARGET_DIR.get() + '/Images_worst_cer_' + self.selectedModel.get() + '/'+ self.getDocNameFromId(currentColId, currentDocId) +'_CER_' + str(worst_cer) + '_Page_'+str(cer_worst[1]+1) +'.jpg'
                     image_best.save(best_url)
                     image_worst.save(worst_url)
                 #---------------------------------------------------------------------------------------
@@ -802,13 +800,13 @@ class TextSegmentation():
                     wb = xw.Book(self.TARGET_DIR.get() + '/ModelEvaluation.xlsx')
                     sht1 = wb.sheets['Sheet1'] 
                 #init the column names
-                    columns = ['doc.ID Sample']
+                    columns = ['doc Name Sample']
                     if imgExport.get() == 1:
                         columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i), 'Best_CER{}'.format(i), 'Best_CER_Imag{}'.format(i), 'Worst_CER{}'.format(i), 'Worst_CER_Imag{}'.format(i)] for i in range(1,10)]))
                     else:
                         columns.extend(chain(*[['CER{}'.format(i), 'WER{}'.format(i), 'Model{}'.format(i)] for i in range(1,10)]))
                     sht1.range('A1').value = columns
-                    sht1.range('A2').value = currentDocId
+                    sht1.range('A2').value = self.getDocNameFromId(currentColId, currentDocId)
                     sht1.range('B2').value = np.sum(cer_list_gew)
                     sht1.range('C2').value = np.sum(wer_list_gew)
                     sht1.range('D2').value = self.selectedModel.get()
@@ -840,7 +838,7 @@ class TextSegmentation():
                 
                 #write the evaluation to the excel file
                     if currentColumn < 3:
-                        sht1.range('A{}'.format(currentRow)).value = currentDocId
+                        sht1.range('A{}'.format(currentRow)).value = self.getDocNameFromId(currentColId, currentDocId)
                         sht1.range('B{}'.format(currentRow)).value = np.sum(cer_list_gew)
                         sht1.range('C{}'.format(currentRow)).value = np.sum(wer_list_gew)
                         sht1.range('D{}'.format(currentRow)).value = self.selectedModel.get()
