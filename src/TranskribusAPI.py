@@ -187,8 +187,7 @@ class TextSegmentation():
         lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(self.savedEmail),'password = "{}"\n'.format(self.savedPassword),'linien_col  = "{}"\n'.format(self.linienCol),'linien_doc  = "{}"\n'.format(self.linienDoc),'linien_TR  = "{}"\n'.format(self.linienTR),
         'suchenErsetzenCol  = "{}"\n'.format(self.suchenErsetzenCol),
         'suchenErsetzenDoc  = "{}"\n'.format(self.suchenErsetzenDoc),
-        'exportCol = "{}"\n'.format(self.exportCol),
-        'exportDoc  = "{}"\n'.format(self.exportDoc),
+        'exportCol = "{}"\n'.format(self.exportCol),'exportDoc  = "{}"\n'.format(self.exportDoc),
         'importCol  = "{}"\n'.format(self.importCol),
         'sampleCol  = "{}"\n'.format(self.sampleCol),
         'sampleDoc  = "{}"\n'.format(self.sampleDoc)]
