@@ -61,6 +61,18 @@ class TextSegmentation():
         
         #list of available models for sample ealuation
         self.modelList = []
+        self.savedPassword = ""
+        self.savedEmail = ""
+        self.linienCol = ""
+        self.linienDoc = ""
+        self.linienTR = ""
+        self.suchenErsetzenCol = ""
+        self.suchenErsetzenDoc = ""
+        self.exportCol = ""
+        self.exportDoc = ""
+        self.importCol = ""
+        self.sampleCol = ""
+        self.sampleDoc = ""
         
         #start the program
         self.startup()
@@ -112,9 +124,9 @@ class TextSegmentation():
         proxyPort.insert(END, '')
         
         #read last login
-        email, password = self.getLastLogin()
-        textentryEmail.insert(END, email)
-        textentryPassword.insert(END, password)
+        self.getLastLogin()
+        textentryEmail.insert(END, self.savedEmail)
+        textentryPassword.insert(END, self.savedPassword)
         
         #create the button
         self.loginButton = Button(self.window,text='Login', font = self.buttonFont, height = 2, width = 20,
@@ -138,21 +150,48 @@ class TextSegmentation():
         text = file.read()
 
         try:
-            email = text.split('"')[1]
-            password = text.split('"')[3]
+            self.savedEmail = text.split('"')[1]
+            self.savedPassword = text.split('"')[3]
+            self.linienCol = text.split('"')[5]
+            self.linienDoc = text.split('"')[7]
+            self.linienTR = text.split('"')[9]
+            self.suchenErsetzenCol = text.split('"')[11]
+            self.suchenErsetzenDoc = text.split('"')[13]
+            self.exportCol = text.split('"')[15]
+            self.exportDoc = text.split('"')[17]
+            self.importCol = text.split('"')[19]
+            self.sampleCol = text.split('"')[21]
+            self.sampleDoc = text.split('"')[23]
         except:
-            email = ""
-            password = ""
+            self.savedEmail = ""
+            self.savedPassword = ""
+            self.linienCol = ""
+            self.linienDoc = ""
+            self.linienTR = ""
+            self.suchenErsetzenCol = ""
+            self.suchenErsetzenDoc = ""
+            self.exportCol = ""
+            self.exportDoc = ""
+            self.importCol = ""
+            self.sampleCol = ""
+            self.sampleDoc = ""
+        return
 
-        return email, password
     
-    def saveLogin(self, email, password):
+    def saveLogin(self):
         """
             If desired this function saves the email and password in a file.
             NOTE: This is not save against reads from others.
         """
         file = open(self.credentialPath, "wt") 
-        lines = ['# -*- coding: utf-8 -*-\n', 'login    = "{}"\n'.format(email),'password = "{}"'.format(password)]
+        lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(self.savedEmail),'password = "{}"\n'.format(self.savedPassword),'linien_col  = "{}"\n'.format(self.linienCol),'linien_doc  = "{}"\n'.format(self.linienDoc),'linien_TR  = "{}"\n'.format(self.linienTR),
+        'suchenErsetzenCol  = "{}"\n'.format(self.suchenErsetzenCol),
+        'suchenErsetzenDoc  = "{}"\n'.format(self.suchenErsetzenDoc),
+        'exportCol = "{}"\n'.format(self.exportCol),
+        'exportDoc  = "{}"\n'.format(self.exportDoc),
+        'importCol  = "{}"\n'.format(self.importCol),
+        'sampleCol  = "{}"\n'.format(self.sampleCol),
+        'sampleDoc  = "{}"\n'.format(self.sampleDoc)]
         file.writelines(lines)
         file.close()
         return
@@ -178,7 +217,7 @@ class TextSegmentation():
             tkinter.messagebox.showinfo("Fehler!","Login war nicht erfolgreich! \n Bitte erneut versuchen.")
             return
         
-        self.saveLogin(self.email, self.password)
+        self.saveLogin()
         session = self.getLoginData()
         session = et.fromstring(session)
         self.userId = session.find("userId").text
@@ -213,7 +252,7 @@ class TextSegmentation():
             This window starts the line detection module and prepares all variables and functions which are necessary.
         """
         self.window.destroy()
-        
+
         #start the configuration window
         self.window = Tk()
         self.window.title('Transkribus Linienerkennung')
@@ -233,13 +272,13 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '')
+        textentryColId.insert(END, self.linienCol)
 
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
-        textentryDocId.insert(END, '')
+        textentryDocId.insert(END, self.linienDoc)
         
         #starting page
         Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
@@ -257,19 +296,17 @@ class TextSegmentation():
         Label(self.window, text='Textregionen (Komma separiert):', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
         textentryTextReg = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryTextReg.grid(row=8, column=0,sticky=W)
-
-        textentryTextReg.insert(END, 'page-number,paragraph,header')
+        textentryTextReg.insert(END, self.linienTR)
         
         #create the button
         self.submitJobButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.submitJobLineSeg(textentryColId, textentryDocId,
                                                                       textentryStartPage, textentryEndPage, textentryTextReg))
         self.window.grid_rowconfigure(9, minsize=25)
-
+        self.saveLogin()
         self.submitJobButton.grid(row=10, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
-        
 
         return
     
@@ -279,11 +316,12 @@ class TextSegmentation():
         """
         colId = textentryColId.get()
         docId = textentryDolId.get()
-
         startPage = int(textentryStartPage.get())
         endPage = textentryEndPage.get() 
         regions_string = textentryTextReg.get()
-        
+        self.linienDoc = docId
+        self.linienCol = colId
+        self.linienTR = regions_string
         #get document defined by colid, docid and sessionid
         fullDoc = self.getDocumentR(colId, docId)
         
@@ -412,12 +450,13 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '')
+        textentryColId.insert(END, self.suchenErsetzenCol)
 
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
+        textentryDocId.insert(END, self.suchenErsetzenDoc)
         
         var1 = IntVar()
         var1.set(1)
@@ -451,7 +490,7 @@ class TextSegmentation():
                     command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage,var1, textentryTrSearch.get(),textentryTrReplace.get()))
 
         self.window.grid_rowconfigure(11, minsize=25)
-
+        self.saveLogin()
         self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
@@ -463,7 +502,8 @@ class TextSegmentation():
             startPage = textentryStartPage
         else:
             startPage = int(textentryStartPage.get())
-        
+        self.suchenErsetzenCol = colid
+        self.suchenErsetzenDoc = docid
         #define the endPages
         if textentryEndPage.get() == "-":
             textentryEndPage = len(doc)
@@ -536,13 +576,13 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '')
+        textentryColId.insert(END, self.sampleCol)
 
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
-        textentryDocId.insert(END, '')
+        textentryDocId.insert(END, self.sampleDoc)
                 
         #Models      
         Label(self.window, text='Modelle:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
@@ -577,7 +617,7 @@ class TextSegmentation():
                                       command = lambda: self.evaluateSelectedModels(textentryColId, textentryDocId, imgExVar, 0, "-"))
         self.window.grid_rowconfigure(14, minsize=25)
 
-
+        self.saveLogin()
         self.submitJobButton.grid(row=15, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
@@ -611,6 +651,7 @@ class TextSegmentation():
         """
         try:
             colId = textentryColId.get()
+            self.sampleCol = colId
 
             self.modelList, self.modelsIdMap, self.modelProvMap = self.getModelsList(colId)
             self.modelList = list(set(self.modelList))
@@ -633,6 +674,8 @@ class TextSegmentation():
             pass
         else:
             return
+        self.sampleCol = textentryColId.get()
+        self.sampleDoc = textentryDocId.get()
         if textentryDocId.get() == "":
             #start progress bar
             progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
@@ -970,12 +1013,13 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '')
+        textentryColId.insert(END, self.exportCol)
 
         #document id
         Label(self.window, text='Document id:', bg='white', font=self.inputFont).grid(row=3, column=1,sticky=W)
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
+        textentryDocId.insert(END, self.exportDoc)
         
         #TR to be searched
         Label(self.window, text='zu exportierende Textregion (leer = alle):', bg='white', font=self.inputFont).grid(row=5, column=0,sticky=W)
@@ -1010,13 +1054,14 @@ class TextSegmentation():
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.startExtraction(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage, textentryExportTR.get(), exportLinien))
-        
+        self.saveLogin()
         self.window.grid_rowconfigure(11, minsize=25)
 
         self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2) 
 
     def startExtraction(self, colId, docId, textentryStartPage,textentryEndPage,regionName,exportLine):
-        
+        self.exportCol = colId
+        self.exportDoc = docId
         if self.TARGET_DIR.get() == "":
             tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie einen Zielpfad aus!')
             return
@@ -1291,7 +1336,7 @@ class TextSegmentation():
         Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
-        textentryColId.insert(END, '')
+        textentryColId.insert(END, self.importCol)
 
         importTR = IntVar()
         checkboxTR = Checkbutton(self.window, bg='white',font=self.inputFont, text="Import Textregionen (unangewählt = Linien)", variable=importTR).grid(row=4, column=1,sticky=W)
@@ -1309,12 +1354,13 @@ class TextSegmentation():
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.startImport(textentryColId.get(), importTR))
-        
+        self.saveLogin()
         self.window.grid_rowconfigure(9, minsize=25)
 
         self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2) 
     
     def startImport(self, colid, isTR):
+        self.importCol = colid
         if self.IMPORT_DIR.get() == "":
             tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie eine CSV-Datei aus!')
             return
