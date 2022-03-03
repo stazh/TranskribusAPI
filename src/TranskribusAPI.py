@@ -61,19 +61,9 @@ class TextSegmentation():
         
         #list of available models for sample ealuation
         self.modelList = []
-        self.savedPassword = ""
-        self.savedEmail = ""
-        self.linienCol = ""
-        self.linienDoc = ""
-        self.linienTR = ""
-        self.suchenErsetzenCol = ""
-        self.suchenErsetzenDoc = ""
-        self.exportCol = ""
-        self.exportDoc = ""
-        self.importCol = ""
-        self.sampleCol = ""
-        self.sampleDoc = ""
+        self.savedPassword,self.savedEmail, self.linienCol, self.linienDoc, self.linienTR, self.suchenErsetzenCol, self.suchenErsetzenDoc,self.exportCol,self.exportDoc,self.importCol,self.sampleCol,self.sampleDoc = self.getLastLogin()
         
+
         #start the program
         self.startup()
 
@@ -175,16 +165,16 @@ class TextSegmentation():
             self.importCol = ""
             self.sampleCol = ""
             self.sampleDoc = ""
-        return
+        return self.savedEmail,self.savedPassword,self.linienCol,self.linienDoc,self.linienTR,self.suchenErsetzenCol,self.suchenErsetzenDoc,self.exportCol,self.exportDoc,self.importCol,self.sampleCol,self.sampleDoc
 
     
-    def saveLogin(self):
+    def saveLogin(self, email, password):
         """
             If desired this function saves the email and password in a file.
             NOTE: This is not save against reads from others.
         """
         file = open(self.credentialPath, "wt") 
-        lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(self.savedEmail),'password = "{}"\n'.format(self.savedPassword),'linien_col  = "{}"\n'.format(self.linienCol),'linien_doc  = "{}"\n'.format(self.linienDoc),'linien_TR  = "{}"\n'.format(self.linienTR),
+        lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(email),'password = "{}"\n'.format(password),'linien_col  = "{}"\n'.format(self.linienCol),'linien_doc  = "{}"\n'.format(self.linienDoc),'linien_TR  = "{}"\n'.format(self.linienTR),
         'suchenErsetzenCol  = "{}"\n'.format(self.suchenErsetzenCol),
         'suchenErsetzenDoc  = "{}"\n'.format(self.suchenErsetzenDoc),
         'exportCol = "{}"\n'.format(self.exportCol),'exportDoc  = "{}"\n'.format(self.exportDoc),
@@ -216,7 +206,7 @@ class TextSegmentation():
             tkinter.messagebox.showinfo("Fehler!","Login war nicht erfolgreich! \n Bitte erneut versuchen.")
             return
         
-        self.saveLogin()
+        self.saveLogin(self.email, self.password)
         session = self.getLoginData()
         session = et.fromstring(session)
         self.userId = session.find("userId").text
@@ -296,13 +286,13 @@ class TextSegmentation():
         textentryTextReg = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryTextReg.grid(row=8, column=0,sticky=W)
         textentryTextReg.insert(END, self.linienTR)
-        
+
+        self.saveLogin(self.email, self.password)      
         #create the button
         self.submitJobButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.submitJobLineSeg(textentryColId, textentryDocId,
                                                                       textentryStartPage, textentryEndPage, textentryTextReg))
         self.window.grid_rowconfigure(9, minsize=25)
-        self.saveLogin()
         self.submitJobButton.grid(row=10, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
@@ -484,12 +474,11 @@ class TextSegmentation():
         textentryEndPage.grid(row=10, column=1,sticky=W)
         textentryEndPage.insert(END, '-')
 
-
+        self.saveLogin(self.email, self.password)
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                     command = lambda: self.searchReplacePagexml(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage,var1, textentryTrSearch.get(),textentryTrReplace.get()))
 
         self.window.grid_rowconfigure(11, minsize=25)
-        self.saveLogin()
         self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
@@ -610,13 +599,13 @@ class TextSegmentation():
 
         browseButton = Button(text="Browse", command=lambda: self.browse_button(self.TARGET_DIR))
         browseButton.grid(row=13, column=0, sticky=E)
-
+        self.saveLogin(self.email, self.password)
         #create the button
         self.submitJobButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.evaluateSelectedModels(textentryColId, textentryDocId, imgExVar, 0, "-"))
         self.window.grid_rowconfigure(14, minsize=25)
 
-        self.saveLogin()
+
         self.submitJobButton.grid(row=15, rowspan = 2, columnspan = 2)
 
         self.window.mainloop()
@@ -1047,11 +1036,11 @@ class TextSegmentation():
 
         browseButton = Button(text="Browse", command=lambda: self.browse_button(self.TARGET_DIR))
         browseButton.grid(row=10, column=0, sticky=E)
-        
+        self.saveLogin(self.email, self.password)     
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.startExtraction(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage, textentryExportTR.get(), exportLinien))
-        self.saveLogin()
+
         self.window.grid_rowconfigure(11, minsize=25)
 
         self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2) 
@@ -1357,11 +1346,11 @@ class TextSegmentation():
 
         browseButton = Button(text="Browse", command=lambda: self.browse_file_button(self.IMPORT_DIR))
         browseButton.grid(row=6, column=0, sticky=E)
-        
+        self.saveLogin(self.email, self.password)      
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
                                       command = lambda: self.startImport(textentryColId.get(), importTR))
-        self.saveLogin()
+
         self.window.grid_rowconfigure(9, minsize=25)
 
         self.replaceTrButton.grid(row=10, rowspan = 2, columnspan = 2) 
