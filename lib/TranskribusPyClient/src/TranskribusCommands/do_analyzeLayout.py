@@ -144,6 +144,24 @@ class DoLAbatch(TranskribusClient):
               </pageList>
              </documentSelectionDescriptor>
             </documentSelectionDescriptors>
+NEU:
+<jobParameters>
+    <docList>
+        <docs>
+            <docId>1543</docId>
+            <pageList>
+                <pages>
+                    <pageId>1234</pageId>
+                    <regionIds>the_xml_id_of_a_text_region</regionIds>
+                </pages>
+                <pages>
+                    <pageId>12345</pageId>
+                    <tsId>1234567</tsId>
+                </pages>
+            </pageList>
+        </docs>
+    </docList>
+</jobParameters>
             
         """
 #         import libxml2
@@ -152,20 +170,23 @@ class DoLAbatch(TranskribusClient):
 # 
         jsonDesc=json.loads(jsonDesc)
     
-        root = etree.Element("documentSelectionDescriptors")
+        root = etree.Element("jobParameters")
         xmldesc= etree.ElementTree(root)
         
-        root2 =etree.Element("documentSelectionDescriptor")
+        root2 =etree.Element("docList")
         root.append(root2)
+        root3 =etree.Element("docs")
+        root2.append(root3)
+
 
         # docId
         node =  etree.Element("docId")
-        root2.append(node)
+        root3.append(node)
         node.text = str(jsonDesc["docId"])
         
         #pageList
         nodelp = etree.Element("pageList")
-        root2.append(nodelp)
+        root3.append(nodelp)
                 
         for page in jsonDesc["pageList"]['pages']:
             nodep = etree.Element("pages")
@@ -232,8 +253,8 @@ class DoLAbatch(TranskribusClient):
         return jsonDesc["docId"], json.dumps(jsonDesc)
 
     
-    def run(self, colId, sDescription, sJobImpl,bBlockSeg=False,bLineSeg=True,bCreateJobBatch=False):
-        ret = self.analyzeLayoutNew(colId, sDescription,sJobImpl,"",bBlockSeg,bLineSeg,bCreateJobBatch=bCreateJobBatch)
+    def run(self, colId, sDescription, sJobImpl,bBlockSeg=False,bLineSeg=True):
+        ret = self.analyzeLayoutNew(colId, sDescription,sJobImpl,"",bBlockSeg,bLineSeg)
         jobid= self.getJobIDsFromXMLStatuses(ret)
         return ret,jobid
 
@@ -315,8 +336,6 @@ if __name__ == '__main__':
 #     NcsrLaJob
 #     CITlabAdvancedLaJob
     sPageDesc = doer.jsonToXMLDescription(sPageDesc)
-    
-    status, jobid = doer.run(colId, sPageDesc,'CITlabAdvancedLaJob',bBlockSeg=options.doRegionSeg,bLineSeg=options.doLineSeg,bCreateJobBatch=options.doBatchJob)
+    status, jobid = doer.run(colId, sPageDesc,'TranskribusLaJob',bBlockSeg=options.doRegionSeg,bLineSeg=options.doLineSeg)
     traceln("job ID:",jobid)
     traceln("- Done")
-    
