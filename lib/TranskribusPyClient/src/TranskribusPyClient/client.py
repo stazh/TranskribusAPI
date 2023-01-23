@@ -560,7 +560,7 @@ class TranskribusClient():
         if sDocId is not None and not ldocID: raise ValueError("No such document")  
         logging.info("- DONE (downloaded collection %s into folder %s    (bForce=%s))"%(colId, collDir, bForce))
         return coll_max_ts, ldocID, dLFileList
-        
+
 
     def download_document(self, colId, docId, docDir, min_ts=-1, bForce=False, bOverwrite=False, bNoImage=False, trp_spec=None):        
         """
@@ -670,9 +670,8 @@ class TranskribusClient():
         resp.raise_for_status()
         #return resp.text        
         return json.loads(resp.text)
-        
-    # -------LAYOUT ANALYSIS ------------------------------------------------------------------------------------------
 
+# -------LAYOUT ANALYSIS ------------------------------------------------------------------------------------------
     def tableMatching(self,templateID,colId, sDescription,params,sJobImpl="CvlTableJob"):
         """
             apply a template to a transcript
@@ -703,12 +702,10 @@ class TranskribusClient():
         
         self._assertLoggedIn()
         myReq = self.sREQ_LA #self.sREQ_LA_analyze
-        params = self._buidlParamsDic(collId=colId
-                                    , jobImpl=sJobImpl)
-#         print (myReq, params, sDescription)
+        params = self._buidlParamsDic(collId=colId)
         resp = self._POST(myReq, params=params, data=sDescription,sContentType="application/xml")
         resp.raise_for_status()
-        return resp.text         
+        return resp.text
         
     def analyzeLayoutNew(self, colId, sDescription, sJobImpl="CITlabAdvancedLaJob"
                     ,  sPars=""
@@ -716,8 +713,8 @@ class TranskribusClient():
                     , bLineSeg = True
                     , bWordSeg = False
                     , bPolygonToBaseline = False
-                    , bBaselineToPolygon = False
-                    , bCreateJobBatch = False):
+                    , bBaselineToPolygon = False):
+ #                   , bCreateJobBatch = False
 
         """
             Hi Hervé,
@@ -758,7 +755,8 @@ class TranskribusClient():
         
         """        
         self._assertLoggedIn()
-        myReq = self.sREQ_LA_analyze
+#        myReq = self.sREQ_LA_analyze
+        myReq = self.sREQ_LA
 #         params = self._buidlParamsDic(collId=colId
 #                                     , doBlockSeg=bBlockSeg, doLineSeg=bLineSeg, doWordSeg=bWordSeg
 #                                     , doPolygonToBaseline=bPolygonToBaseline, doBaselineToPolygon=bBaselineToPolygon
@@ -766,9 +764,9 @@ class TranskribusClient():
 
         #https://transkribus.eu/TrpServerTesting/rest/LA/analyze?doLineSeg=true&collId=2&doBlockSeg=true&doWordSeg=false&jobImpl=CITlabAdvancedLaJob
         params = self._buidlParamsDic(collId=colId
-                                    , doBlockSeg=bBlockSeg, doLineSeg=bLineSeg, doWordSeg=bWordSeg
-#                                     , doPolygonToBaseline=False, doBaselineToPolygon=False
-                                    , doCreateJobBatch=bCreateJobBatch
+                                    , doBlockSeg=bBlockSeg, doLineSeg=bLineSeg
+#                                    , doPolygonToBaseline=False, doBaselineToPolygon=False
+#                                    , doCreateJobBatch=bCreateJobBatch
                                     , jobImpl=sJobImpl)
         
 #         print (myReq, params, sDescription)
@@ -776,7 +774,7 @@ class TranskribusClient():
 #         print resp.text
         resp.raise_for_status()
         return resp.text 
-    
+
     def analyzeLayoutBatch(self,colId, docId, sPages, bBlockSeg, bLineSeg):
         """
         apply Layout Analysis
