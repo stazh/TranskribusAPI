@@ -1007,7 +1007,7 @@ class TextSegmentation():
         titleText.config(bg="white")   
         
         #collection id
-        Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)   
+        Label(self.window, text='Collection id:', bg='white', font=self.inputFont).grid(row=3, column=0,sticky=W)
         textentryColId = Entry(self.window, bg='white', width=40, font = self.inputFont)
         textentryColId.grid(row=4, column=0,sticky=W)
         textentryColId.insert(END, self.exportCol)
@@ -1023,7 +1023,8 @@ class TextSegmentation():
         textentryExportTR = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryExportTR.grid(row=6, column=0,sticky=W)
         textentryExportTR.insert(END, 'header')
-        
+        noExportImages = IntVar()
+        checkboxBilder = Checkbutton(self.window, bg='white',font=self.inputFont, text="ohne Bilder exportieren", variable=noExportImages).grid(row=5, column=1,sticky=W)
         exportLinien = IntVar()
         checkboxLinie = Checkbutton(self.window, bg='white',font=self.inputFont, text="Zeilen der Textregion separiert exportieren", variable=exportLinien).grid(row=6, column=1,sticky=W)
         #Target directory
@@ -1050,13 +1051,14 @@ class TextSegmentation():
         
         #create the button
         self.replaceTrButton = Button(self.window,text='Starten', font = self.buttonFont, height = 2, width = 20,
-                                      command = lambda: self.startExtraction(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage, textentryExportTR.get(), exportLinien))
+                                      command = lambda: self.startExtraction(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage, textentryExportTR.get(), exportLinien, noExportImages))
         self.saveLogin()
         self.window.grid_rowconfigure(11, minsize=25)
 
         self.replaceTrButton.grid(row=12, rowspan = 2, columnspan = 2) 
 
-    def startExtraction(self, colId, docId, textentryStartPage,textentryEndPage,regionName,exportLine):
+
+    def startExtraction(self, colId, docId, textentryStartPage,textentryEndPage,regionName,exportLine,noExportImages):
         self.exportCol = colId
         self.exportDoc = docId
         if self.TARGET_DIR.get() == "":
@@ -1080,7 +1082,10 @@ class TextSegmentation():
         sht1 = wb.add_worksheet()
         
         #init the column names
-        columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs','Bild']
+        if noExportImages.get == 1:
+            columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs']
+        else:
+            columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs','Bild']
         
         #write the first entry together with the columns header
         for i, col in enumerate(columns):
@@ -1112,9 +1117,10 @@ class TextSegmentation():
                     sht1.write(row, 6, ids[page][c])
                     sht1.write(row, 7, customs[page][c])
                     #sht1.write(row, 6, xmls[page][c])
-                    imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
+                    if noExportImages.get() != 1:
+                        imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
                     # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                    sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
+                        sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
                     row += 1
         else:
         #write the results into the excel file
@@ -1129,9 +1135,10 @@ class TextSegmentation():
                 sht1.write(row, 6, ids[c])
                 sht1.write(row, 7, customs[c])
                     #sht1.write(row, 6, xmls[page][c])
-                imgs[c].save('tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]))
+                if noExportImages.get() != 1:
+                    imgs[c].save('tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]))
                     # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]),{'x_scale': 0.3, 'y_scale': 0.3})
+                    sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]),{'x_scale': 0.3, 'y_scale': 0.3})
                 row += 1
         wb.close()
         #delete the temporary folder for the images
