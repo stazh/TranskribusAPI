@@ -1498,7 +1498,7 @@ class TextSegmentation():
         try:
             for j in range(0,len(ids)):
                 for region in soup.findAll("TextRegion"):
-                    if ids[j] in region['id']:
+                    if ids[j] == region['id']:
                         region['custom'] = costoms[j]
         except:
             tkinter.messagebox.showinfo('Fehler!','Beim Import in ' + str(docid) + ', Seite ' + str(pageNo) + ' ist ein Fehler aufgetreten. Abbruch.')
@@ -1511,7 +1511,7 @@ class TextSegmentation():
         try:
             for j in range(0,len(ids)):
                 for line in soup.findAll("TextLine"):
-                    if ids[j] in line['id']:
+                    if ids[j] == line['id']:
                         line['custom'] = costoms[j]
                         for t in line.findAll("Unicode"):
                             t.string = linetexts[j]
