@@ -201,6 +201,8 @@ class TextSegmentation():
         """
         self.email = textentryEmail.get()
         self.password = textentryPassword.get()
+        self.savedEmail = self.email
+        self.savedPassword = self.password
         self.proxyHost = proxyHost.get()
         self.proxyPort = proxyPort.get()
         
@@ -1082,7 +1084,7 @@ class TextSegmentation():
         sht1 = wb.add_worksheet()
         
         #init the column names
-        if noExportImages.get == 1:
+        if noExportImages.get() == 1:
             columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs']
         else:
             columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs','Bild']
