@@ -1,0 +1,5 @@
+Streamlit
+streamlit_option_menu
+pandas
+pillow
+streamlit_extras
