@@ -61,8 +61,6 @@ if st.button('Login'):
     else:
         st.warning('Bitte Logindaten eingeben.', icon="⚠️")
 
-## Todo add streamlit session handling
-
 def authentification(request):
     session = {
         "userId": et.fromstring(request.text).find("userId").text,

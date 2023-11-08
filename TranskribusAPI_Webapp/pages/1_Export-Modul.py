@@ -1,3 +1,4 @@
+from io import BytesIO
 import streamlit as st
 import pandas as pd
 from streamlit_option_menu import option_menu
@@ -12,327 +13,347 @@ from streamlit.source_util import (
     get_pages,
     _on_pages_changed
 )
-st.set_page_config(
-    page_title="StAZH Transkribus API",
-)
+import xlsxwriter
+import os
+from PIL import Image  # Assuming images are handled with PIL
+import shutil
+from bs4 import BeautifulSoup
+import requests
+import numpy as np
 
-hide_decoration_bar_style = '''
-    <style>
-        header {visibility: hidden;}
-    </style>
-'''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
+def app():
+    if not check_session():
+        switch_page("Start")
 
-add_logo("data/loewe.png", height=150)
+    st.set_page_config(
+        page_title="StAZH Transkribus API",
+    )
 
-st.markdown("Bitte die Parameter definieren:")
+    hide_decoration_bar_style = '''
+        <style>
+            header {visibility: hidden;}
+        </style>
+    '''
+    st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 
+    add_logo("data/loewe.png", height=150)
 
-textentryColId = st.text_input("Collection id:")
-textentryDocId = st.text_input("Doc id:")
-textentryExportTR = st.text_input("zu exportierende Textregion (leer = alle):")
-checkboxBilder = st.checkbox('ohne Bilder exportieren')
-checkboxLinie = st.checkbox('Zeilen der Textregion separiert exportieren')
-#Funktioniert nicht download-Button!
-with st.file_input() as input:
-  if input == None:
-    st.warning('No file selected.')
-  else:
-    TARGET_DIR = input.read()
-"""       
-        checkboxLinie = Checkbutton(self.window, bg='white',font=self.inputFont, text="Zeilen der Textregion separiert exportieren", variable=exportLinien).grid(row=6, column=1,sticky=W)
-        #Target directory
-        Label(self.window, text='Zielordner:', bg='white', font=self.inputFont).grid(row=9, column=0,sticky=W)
-        
-        TARGET_DIR = StringVar(value = '')
- 
+    st.markdown("Bitte die Parameter definieren:")
 
-        #starting page
-        Label(self.window, text='Start Seite:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
-        textentryStartPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
-
-        #ending page
-        Label(self.window, text='End Seite:', bg='white', font=self.inputFont).grid(row=7, column=1,sticky=W)
-        textentryEndPage = Entry(self.window, bg='white',width=40, font = self.inputFont)
-
-        browseButton = Button(text="Browse", command=lambda: self.browse_button(self.TARGET_DIR))
-        browseButton.grid(row=10, column=0, sticky=E)
-        
-        #create the button
-        startExtraction(textentryColId.get(), textentryDocId.get(),textentryStartPage,textentryEndPage, textentryExportTR.get(), exportLinien, noExportImages))
-
-
-
-    def startExtraction(self, colId, docId, textentryStartPage,textentryEndPage,regionName,exportLine,noExportImages):
-
-        if TARGET_DIR == "":
-            tkinter.messagebox.showinfo('Fehler!','Bitte wählen sie einen Zielpfad aus!')
-
-        docName = self.getDocNameFromId(colId, docId)
-        docName1 = str(docName)
-        docName2 = docName1.replace("(","")
-        docName3 = docName2.replace(")","")
-        docName4 = docName3.replace(" ","_")
-        docName5 = docName4.replace("/","_")
-
-        if exportLine.get() == 1:
-            text, nrOnPage, region_Name,ids, customs, imgs, pageNr = self.extractRegionsLinesTextandImage(colId, docId, textentryStartPage, textentryEndPage, 'LAST', regionName)
-            wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/' + docName5 + '_RegionExtraction'+'_'+ regionName +'_lines.xlsx')
+    textentryColId = st.text_input("Collection id:")
+    textentryDocId = st.text_input("Doc id:")
+    textentryExportTR = st.text_input("zu exportierende Textregion (leer = alle):")
+    checkboxBilder = st.checkbox('ohne Bilder exportieren')
+    checkboxLinie = st.checkbox('Zeilen der Textregion separiert exportieren')
+    #Funktioniert nicht download-Button!
+    with st.file_input() as input:
+        if input == None:
+            st.warning('No file selected.')
         else:
-            text, nrOnPage, region_Name,ids, customs, imgs, pageNr = self.extractRegionsTextandImage(colId, docId,textentryStartPage, textentryEndPage, 'LAST', regionName)
-            wb = xlsxwriter.Workbook(self.TARGET_DIR.get() + '/' + docName5 + '_RegionExtraction'+'_'+ regionName +'_regions.xlsx')
+            TARGET_DIR = input.read()
 
-        sht1 = wb.add_worksheet()
-        
-        #init the column names
-        if noExportImages.get() == 1:
-            columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs']
-        else:
-            columns = ['Dokument Id', 'Dokument Name', 'Region Name','Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id','Customs','Bild']
-        
-        #write the first entry together with the columns header
-        for i, col in enumerate(columns):
-            sht1.write(0, i, col)
-        
-        row = 1
-        
-        #this format is needed, such that we can write on multiple lines
-        wrap = wb.add_format({'text_wrap': True})
-        
-        #folder for temp imgs:
-        if not os.path.exists('tempImgs/'):
-            os.makedirs("tempImgs")
-        #set Image and Text column width
-        sht1.set_column(5, 5, 50)
-        sht1.set_column(6, 6, 50)
-        sht1.set_column(4, 4, 50)
-        sht1.set_column(7, 7, 70)
-        if exportLine.get() == 1:
-            for page in range(len(text)):
-                for c in range(len(text[page])):
-                    sht1.set_row(row, 50)
-                    sht1.write(row, 0, str(docId))
-                    sht1.write(row, 1, str(docName))
-                    sht1.write(row, 2, region_Name[page][c])
-                    sht1.write(row, 3, pageNr[page][c])
-                    sht1.write(row, 4, nrOnPage[page][c])
-                    sht1.write(row, 5, text[page][c])
-                    sht1.write(row, 6, ids[page][c])
-                    sht1.write(row, 7, customs[page][c])
-                    #sht1.write(row, 6, xmls[page][c])
-                    if noExportImages.get() != 1:
-                        imgs[page][c].save('tempImgs/tempImg{}_{}.jpg'.format(page, c))
-                    # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                        sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(page, c),{'x_scale': 0.3, 'y_scale': 0.3})
-                    row += 1
-        else:
-        #write the results into the excel file
-            for c in range(len(text)):
-                sht1.set_row(row, 150)
-                sht1.write(row, 0 , str(docId))
-                sht1.write(row, 1, str(docName))
-                sht1.write(row, 2, region_Name[c])
-                sht1.write(row, 3, pageNr[c])
-                sht1.write(row, 4, nrOnPage[c])
-                sht1.write(row, 5, '\n'.join(text[c]),wrap)
-                sht1.write(row, 6, ids[c])
-                sht1.write(row, 7, customs[c])
-                    #sht1.write(row, 6, xmls[page][c])
-                if noExportImages.get() != 1:
-                    imgs[c].save('tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]))
-                    # Maybe we could add a scale variable to change the scale of the images in the excel file (Keep x_scale and y_scale equal to get the same ratio)
-                    sht1.insert_image(row, 8,'tempImgs/tempImg{}_{}.jpg'.format(c,nrOnPage[c]),{'x_scale': 0.3, 'y_scale': 0.3})
-                row += 1
-        wb.close()
-        #delete the temporary folder for the images
-        shutil.rmtree('tempImgs')
-        tkinter.messagebox.showinfo("Ende erreicht!","Textregion " + regionName + " aus Doc " + docId + " extrahiert.")
+        # Input for starting page
+    st.text('Start Seite:')
+    textentryStartPage = st.text_input('', key='start_page')
+
+    # Input for ending page
+    st.text('End Seite:')
+    textentryEndPage = st.text_input('', key='end_page')
+
+    # Browse button (the functionality will depend on how you want to implement browsing in Streamlit)
+    browseButton = st.button('Browse')
+
+    # Assuming you have a function 'startExtraction' defined elsewhere in your code
+    # Create the button to start extraction
+    if st.button('Start Extraction'):
+        start_extraction(textentryColId, textentryDocId, textentryStartPage, textentryEndPage, textentryExportTR, checkboxLinie, checkboxBilder)
+    
+
+def check_session():
+    if st.session_state["session_state"] == None:
+        return False
+    else:
+        return True
+
+## This is done
+def start_extraction(col_id, doc_id, start_page, end_page, region_name, export_line, no_export_images, target_dir):
+    if target_dir == "":
+        st.error('Bitte wählen Sie einen Zielpfad aus!')
         return
 
-    def extractRegionsTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
-        try:
-            #start a progressbar
-            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+    doc_name = get_doc_name_from_id(col_id, doc_id)  # Replace this with your actual method
+    doc_name = doc_name.replace("(", "").replace(")", "").replace(" ", "_").replace("/", "_")
 
-            #set title to progressbar
-            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
-            progressText.grid(row=0, column=1,sticky=W)
-            progressText.config(bg="white")
+    if export_line:
+        text, nr_on_page, region_name, ids, customs, imgs, page_nr = extract_regions_lines_text_and_image(col_id, doc_id, start_page, end_page, 'LAST', region_name)
+        workbook_name = f"{target_dir}/{doc_name}_RegionExtraction_{region_name}_lines.xlsx"
+    else:
+        text, nr_on_page, region_name, ids, customs, imgs, page_nr = extract_regions_text_and_image(col_id, doc_id, start_page, end_page, 'LAST', region_name)
+        workbook_name = f"{target_dir}/{doc_name}_RegionExtraction_{region_name}_regions.xlsx"
 
-            self.window.update()
-            doc = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
+    wb = xlsxwriter.Workbook(workbook_name)
+    sht1 = wb.add_worksheet()
 
-            if isinstance(textentryStartPage, int):
-                startPage = textentryStartPage
-            else:
-                startPage = int(textentryStartPage.get())
+    # Initialize the column names
+    columns = ['Dokument Id', 'Dokument Name', 'Region Name', 'Seitennr', 'Nummer auf Seite', 'Text', 'Textregion Id', 'Customs']
+    if not no_export_images:
+        columns.append('Bild')
 
-            #define the endPages
-            if textentryEndPage == '-' or textentryEndPage.get() == '-':
-                endPage = len(doc)
-            elif isinstance(textentryEndPage, int):
-                endPage = textentryEndPage
-            else:
-                endPage = int(textentryEndPage.get())
-            #get document
+    # Write the columns header
+    for i, col in enumerate(columns):
+        sht1.write(0, i, col)
 
-            #get the data that contains the images
-            docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
-            page_txt = []
-            region_name_txt = []
-            page_nr_txt = []
-            nrOnPage_txt = []
-            trid_txt = []
-            custom_txt = []
-            page_imgs = []
-            nrOnPageCounter = 0
-            for c, page in enumerate(doc):
-                
-                soup = BeautifulSoup(page, "xml")
-                page_img = self.getImageFromUrl(docConfig[startPage+c-1]['url'])
-                page_nr = docConfig[startPage + c-1]['pageNr']
-                nrOnPageCounter = 0
-                for region in soup.findAll("TextRegion"):
-                    try:
-                        if regionName in region['custom'] or regionName == "":
-                            nrOnPageCounter = nrOnPageCounter + 1
-                            trid_text = region['id']
-                            region_name_text = region['custom'][region['custom'].find('structure {type:')+16:-2]
-                            custom_text = region['custom']
-                            region_text = []
-                            last_line = ""
-                            for line in region.findAll("TextLine"):
-                                for t in line.findAll("Unicode"):
-                                    last_line = t.text
-                                region_text.append(last_line)
-                            cords = region.find('Coords')['points']
-                            points = [c.split(",") for c in cords.split(" ")]
+    wrap = wb.add_format({'text_wrap': True})
 
-                            maxX = -1000
-                            minX = 100000
-                            maxY = -1000
-                            minY = 100000
+    if not os.path.exists('tempImgs/'):
+        os.makedirs("tempImgs")
 
-                            for p in points:
-                                maxX = max(int(p[0]), maxX)
-                                minX = min(int(p[0]), minX)
-                                maxY = max(int(p[1]), maxY)
-                                minY = min(int(p[1]), minY)
-                            nrOnPage_txt.append(str(nrOnPageCounter))
-                            page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
+    sht1.set_column(5, 5, 50)
+    sht1.set_column(6, 6, 50)
+    sht1.set_column(4, 4, 50)
+    sht1.set_column(7, 7, 70)
+
+    row = 1
+    if export_line:
+        for page in range(len(text)):
+            for c in range(len(text[page])):
+                sht1.set_row(row, 50)
+                sht1.write(row, 0, str(doc_id))
+                sht1.write(row, 1, str(doc_name))
+                sht1.write(row, 2, region_name[page][c])
+                sht1.write(row, 3, page_nr[page][c])
+                sht1.write(row, 4, nr_on_page[page][c])
+                sht1.write(row, 5, text[page][c])
+                sht1.write(row, 6, ids[page][c])
+                sht1.write(row, 7, customs[page][c])
+                if not no_export_images:
+                    img_path = f'tempImgs/tempImg{page}_{c}.jpg'
+                    imgs[page][c].save(img_path)  # Assuming imgs is a list of PIL Image objects
+                    sht1.insert_image(row, 8, img_path, {'x_scale': 0.3, 'y_scale': 0.3})
+                row += 1
+    else:
+        for c in range(len(text)):
+            sht1.set_row(row, 150)
+            sht1.write(row, 0 , str(doc_id))
+            sht1.write(row, 1, str(doc_name))
+            sht1.write(row, 2, region_name[c])
+            sht1.write(row, 3, page_nr[c])
+            sht1.write(row, 4, nr_on_page[c])
+            sht1.write(row, 5, '\n'.join(text[c]), wrap)
+            sht1.write(row, 6, ids[c])
+            sht1.write(row, 7, customs[c])
+            if not no_export_images:
+                img_path = f'tempImgs/tempImg{c}_{nr_on_page[c]}.jpg'
+                imgs[c].save(img_path)
+                sht1.insert_image(row, 8, img_path, {'x_scale': 0.3, 'y_scale': 0.3})
+            row += 1
+
+    wb.close()
+
+    if os.path.exists('tempImgs/'):
+        shutil.rmtree('tempImgs')
+
+    st.success(f"Textregion {region_name} aus Doc {doc_id} extrahiert.")
+
+
+def extract_regions_lines_text_and_image(col_id, doc_id, start_page, end_page, tool_name, region_name):
+    try:
+        # Assuming extractTranscriptionRaw and getDocumentR are defined elsewhere
+        doc = extract_transcription_raw(col_id, doc_id, start_page, end_page, tool_name)
+        doc_config = get_document_r(col_id, doc_id)['pageList']['pages']
+
+        # Determine start and end pages
+        start_page = int(start_page) if isinstance(start_page, int) else int(start_page)
+        end_page = len(doc) if end_page == '-' else int(end_page) if isinstance(end_page, int) else int(end_page)
+
+        full_text, ids, region_names, customs, nr_on_page, page_nrs, imgs = ([] for _ in range(7))
+        nr_on_page_counter = 0
+
+        for c, page in enumerate(doc[start_page-1:end_page]):
+            soup = BeautifulSoup(page, "xml")
+            page_txt, region_name_txt, nr_on_page_txt, line_txt, custom_txt, page_imgs, page_nr_array = ([] for _ in range(7))
+            page_img_url = doc_config[start_page + c - 1]['url']
+            page_nr = doc_config[start_page + c - 1]['pageNr']
+
+            # Fetch and process image
+            response = requests.get(page_img_url)
+            page_img = Image.open(BytesIO(response.content))
+
+            for region in soup.find_all("TextRegion"):
+                try:
+                    if region_name in region['custom'] or region_name == "":
+                        nr_on_page_counter += 1
+                        region_name_text = region['custom'][region['custom'].find('structure {type:')+16:-2]
+
+                        for line in region.find_all("TextLine"):
+                            lineid_text = line['id']
+                            custom_text = line['custom']
+                            region_text = "".join(t.text for t in line.find_all("Unicode"))
+                            cords = line.find('Coords')['points']
+                            points = [list(map(int, c.split(","))) for c in cords.split(" ")]
+
+                            minX, minY = min(points)[0], min(points)[1]
+                            maxX, maxY = max(points)[0], max(points)[1]
+
+                            page_imgs.append(page_img.crop((minX, minY, maxX, maxY)))
                             page_txt.append(region_text)
-                            trid_txt.append(trid_text)
+                            line_txt.append(lineid_text)
                             region_name_txt.append(region_name_text)
                             custom_txt.append(custom_text)
-                            page_nr_txt.append(page_nr)
-                    except:
-                        pass
-                #update progressbar
-                progress['value'] = 100*((c + 1)/len(doc))
-                progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
-                self.window.update()
+                            page_nr_array.append(page_nr)
+                except:
+                    pass
 
-            return page_txt, nrOnPage_txt, region_name_txt, trid_txt, custom_txt, page_imgs, page_nr_txt
-        except:
-            tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei der Extraktion der Regionen! Vorgang wird abgebrochen...')
+            full_text.append(page_txt)
+            nr_on_page.append(nr_on_page_txt)
+            ids.append(line_txt)
+            region_names.append(region_name_txt)
+            customs.append(custom_txt)
+            imgs.append(page_imgs)
+            page_nrs.append(page_nr_array)
 
-    def extractRegionsLinesTextandImage(self, colId, docId, textentryStartPage, textentryEndPage, toolName, regionName):
-        try:
-            #start a progressbar
-            progress = Progressbar(self.window,orient=HORIZONTAL,length=100,mode='determinate')
-            progress.grid(row=0,column=1, rowspan = 1, columnspan = 2, padx=(100, 10))
+            # Update progress bar in Streamlit
+            progress_value = int(100 * ((c + 1) / len(doc[start_page-1:end_page])))
+            st.progress(progress_value)
 
-            #set title to progressbar
-            progressText = Label(self.window, text="job progress 0%:",font=self.titleFont, bg='white')
-            progressText.grid(row=0, column=1,sticky=W)
-            progressText.config(bg="white")
+        return full_text, nr_on_page, region_names, ids, customs, imgs, page_nrs
 
-            self.window.update()
-            doc = self.extractTranscriptionRaw(colId, docId, textentryStartPage, textentryEndPage, toolName)
+    except Exception as e:
+        st.error(f'Ein Fehler ist aufgetreten bei: {e}')
 
-            if isinstance(textentryStartPage, int):
-                startPage = textentryStartPage
+def extract_regions_text_and_image(col_id, doc_id, start_page, end_page, tool_name, region_name):
+    try:
+        # Assuming extract_transcription_raw and get_document_r are defined elsewhere
+        doc = extract_transcription_raw(col_id, doc_id, start_page, end_page, tool_name)
+
+        # Determine start and end pages
+        start_page = int(start_page) if isinstance(start_page, int) else int(start_page)
+        end_page = len(doc) if end_page == '-' else int(end_page) if isinstance(end_page, int) else int(end_page)
+
+        doc_config = get_document_r(col_id, doc_id)['pageList']['pages']
+        page_txt, region_name_txt, page_nr_txt, nr_on_page_txt, trid_txt, custom_txt, page_imgs = ([] for _ in range(7))
+        nr_on_page_counter = 0
+
+        for c, page in enumerate(doc[start_page-1:end_page]):
+            soup = BeautifulSoup(page, "xml")
+            page_img_url = doc_config[start_page + c - 1]['url']
+            page_nr = doc_config[start_page + c - 1]['pageNr']
+
+            # Fetch and process image
+            response = requests.get(page_img_url)
+            page_img = Image.open(BytesIO(response.content))
+
+            for region in soup.find_all("TextRegion"):
+                try:
+                    if region_name in region['custom'] or region_name == "":
+                        nr_on_page_counter += 1
+                        trid_text = region['id']
+                        region_name_text = region['custom'][region['custom'].find('structure {type:')+16:-2]
+                        custom_text = region['custom']
+                        region_text = []
+
+                        for line in region.find_all("TextLine"):
+                            last_line = ''.join(t.text for t in line.find_all("Unicode"))
+                            region_text.append(last_line)
+
+                        cords = region.find('Coords')['points']
+                        points = [list(map(int, c.split(","))) for c in cords.split(" ")]
+
+                        minX, minY = min(points)[0], min(points)[1]
+                        maxX, maxY = max(points)[0], max(points)[1]
+
+                        page_imgs.append(page_img.crop((minX, minY, maxX, maxY)))
+                        page_txt.append(region_text)
+                        trid_txt.append(trid_text)
+                        region_name_txt.append(region_name_text)
+                        custom_txt.append(custom_text)
+                        page_nr_txt.append(page_nr)
+                except:
+                    pass
+
+        return page_txt, nr_on_page_txt, region_name_txt, trid_txt, custom_txt, page_imgs, page_nr_txt
+
+    except Exception as e:
+        st.error(f'Fehler bei der Extraktion der Regionen: {e}')
+
+def get_doc_name_from_id(colId, docId):
+    doc = get_document_r(colId, docId)
+    return doc['md']['title']
+
+
+def extract_transcription_raw(colId, docId, textentryStartPage, textentryEndPage, toolName):
+        #get document
+        doc = get_document_r(colId, docId)['pageList']['pages']
+
+        #setup the startpage
+        if isinstance(textentryStartPage, int):
+            startPage = textentryStartPage
+        else:
+            startPage = int(textentryStartPage.get())
+        
+        #define the endPages
+        if textentryEndPage == "-" or textentryEndPage.get() == '-':
+            endPage = len(doc)
+        elif isinstance(textentryEndPage, int):
+            endPage = textentryEndPage
+        else:
+            endPage = int(textentryEndPage.get())
+        
+        #define the pages
+        pages = range(startPage-1, endPage)
+        
+        page_text = []
+        
+        #go through all pages
+        for page in pages:
+            if toolName == 'LAST':
+                    url = doc[page]['tsList']['transcripts'][0]['url']
             else:
-                startPage = int(textentryStartPage.get())
+                for ts in doc[page]['tsList']['transcripts']:
+                    if toolName == 'GT':
+                        if ts['status'] == 'GT':
+                            url = ts['url']
+                            break
+                    else:
+                        try:
+                            if toolName in ts['toolName']:
+                                url = ts['url']
+                                break
+                        except:
+                            pass
+            try:
+                if proxy["https"] == 'http://:@:':
+                    req = requests.get(url)
+                else:
+                    req = requests.get(url, proxies = proxy)
+                page_text.append(req.text)
+                
+            except:
 
-            #define the endPages
-            if textentryEndPage == '-' or textentryEndPage.get() == '-':
-                endPage = len(doc)
-            elif isinstance(textentryEndPage, int):
-                endPage = textentryEndPage
-            else:
-                endPage = int(textentryEndPage.get())
-            #get document
+                #self.popupmsg("Keine Transkription für {} auf Seite {} vorhanden! Vorgang wird abgebrochen...".format(toolName, page))
+                return
 
-            #get the data that contains the images
-            docConfig = self.getDocumentR(colId, docId)['pageList']['pages']
+        return page_text
 
-            full_text = []
-            ids = []
-            region_names = []
-            customs = []
-            nrOnPage = []
-            page_Nrs = []
-            imgs = []
-            nrOnPageCounter = 0
-            for c, page in enumerate(doc):
-                soup = BeautifulSoup(page, "xml")
-                page_txt = []
-                region_name_txt = []
-                nrOnPage_txt = []
-                line_txt = []
-                custom_txt = []
-                page_imgs = []
-                page_Nr_array = []
-                page_img = self.getImageFromUrl(docConfig[startPage+c-1]['url'])
-                page_Nr = docConfig[startPage + c-1]['pageNr']
-                nrOnPageCounter = 0
-                for region in soup.findAll("TextRegion"):
-                    try:
-                        if regionName in region['custom'] or regionName == "":
-                            nrOnPageCounter = nrOnPageCounter + 1
-                            region_name_text = region['custom'][region['custom'].find('structure {type:')+16:-2]
-                            for line in region.findAll("TextLine"):
-                                lineid_text = line['id']
-                                custom_text = line['custom']
-                                region_text = ""
-                                for t in line.findAll("Unicode"):
-                                    region_text = t.text
-                                cords = line.find('Coords')['points']
-                                points = [c.split(",") for c in cords.split(" ")]
 
-                                maxX = -1000
-                                minX = 100000
-                                maxY = -1000
-                                minY = 100000
+def get_document_r(colid, docid):
 
-                                for p in points:
-                                    maxX = max(int(p[0]), maxX)
-                                    minX = min(int(p[0]), minX)
-                                    maxY = max(int(p[1]), maxY)
-                                    minY = min(int(p[1]), minY)
-                                nrOnPage_txt.append(str(nrOnPageCounter))
-                                page_imgs.append(page_img.crop((minX, minY, maxX,maxY)))
-                                page_txt.append(region_text)
-                                line_txt.append(lineid_text)
-                                region_name_txt.append(region_name_text)
-                                custom_txt.append(custom_text)
-                                page_Nr_array.append(page_Nr)
-                            #crop out the image
-                    except:
-                        pass
-                full_text.append(page_txt)
-                nrOnPage.append(nrOnPage_txt)
-                ids.append(line_txt)
-                region_names.append(region_name_txt)
-                customs.append(custom_txt)
-                imgs.append(page_imgs)
-                page_Nrs.append(page_Nr_array)
-                #update progressbar
-                progress['value'] = 100*((c + 1)/len(doc))
-                progressText['text'] = "job progress {}%:".format(np.round(100*((c + 1)/len(doc)),1))
-                self.window.update()
-            return full_text, nrOnPage, region_names, ids, customs, imgs, page_Nrs
-        except:
-            tkinter.messagebox.showinfo('Fehler!','Ein Fehler is aufgetreten bei')"""
+    if proxy["https"] == 'http://:@:':
+        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, sessionId))
+    else:
+        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, sessionId), proxies = proxy)
+
+    if r.status_code == requests.codes.ok:
+        return r.json()
+    else:
+        print(r)
+        tkinter.messagebox.showinfo('Fehler!','Fehler bei der  Abfrage eines Dokumentes. Doc-ID ' + str(docid) + ' invalid?')
+        return None
+    
+def get_image_from_url(url):
+        if proxy["https"] == 'http://:@:':
+            r = requests.get(url, stream=True)
+        else:
+            r = requests.get(url, stream=True, proxies = proxy)
+        img = Image.open(r.raw)
+        return img
