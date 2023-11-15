@@ -29,18 +29,3 @@ st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 add_logo("data/loewe.png", height=150)
 
 st.subheader("StAZH TranskribusAPI")
-
-def select_destination_directory():
-    st.sidebar.header("Select Destination Directory")
-    selected_directory = st.sidebar.selectbox(
-        "Choose a destination directory:",
-        options=["/path/to/directory1", "/path/to/directory2", "/path/to/directory3"]
-    )
-    return selected_directory
-
-# Example usage
-selected_directory = select_destination_directory()
-if selected_directory:
-    st.write(f"Selected directory: {selected_directory}")
-else:
-    st.write("No directory selected.")
