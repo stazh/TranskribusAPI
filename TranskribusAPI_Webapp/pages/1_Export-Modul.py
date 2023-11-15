@@ -22,7 +22,7 @@ import requests
 import numpy as np
 
 def app():
-    if not check_session():
+    if st.session_state.get("sessionId") is None:
         switch_page("Start")
 
     st.set_page_config(
@@ -45,37 +45,29 @@ def app():
     textentryExportTR = st.text_input("zu exportierende Textregion (leer = alle):")
     checkboxBilder = st.checkbox('ohne Bilder exportieren')
     checkboxLinie = st.checkbox('Zeilen der Textregion separiert exportieren')
-    #Funktioniert nicht download-Button!
-    with st.file_input() as input:
-        if input == None:
-            st.warning('No file selected.')
-        else:
-            TARGET_DIR = input.read()
 
-        # Input for starting page
-    st.text('Start Seite:')
-    textentryStartPage = st.text_input('', key='start_page')
+    # Input for starting page
+    textentryStartPage = st.text_input('Start Seite:', key='start_page')
 
     # Input for ending page
-    st.text('End Seite:')
-    textentryEndPage = st.text_input('', key='end_page')
-
-    # Browse button (the functionality will depend on how you want to implement browsing in Streamlit)
-    browseButton = st.button('Browse')
+    textentryEndPage = st.text_input('End Seite:', key='end_page')
 
     # Assuming you have a function 'startExtraction' defined elsewhere in your code
     # Create the button to start extraction
     if st.button('Start Extraction'):
         start_extraction(textentryColId, textentryDocId, textentryStartPage, textentryEndPage, textentryExportTR, checkboxLinie, checkboxBilder)
     
+    # Browse button (the functionality will depend on how you want to implement browsing in Streamlit)
+    download_button = st.button('Download extracted data')
+
 
 def check_session():
-    if st.session_state["session_state"] == None:
+    if dict.get(st.session_state["sessionId"]) == None:
         return False
     else:
         return True
 
-## This is done
+# TODO: Replace target_dir functionality with a directory selector method. OOTB Streamlit doesn't have one.
 def start_extraction(col_id, doc_id, start_page, end_page, region_name, export_line, no_export_images, target_dir):
     if target_dir == "":
         st.error('Bitte wählen Sie einen Zielpfad aus!')
@@ -322,10 +314,10 @@ def extract_transcription_raw(colId, docId, textentryStartPage, textentryEndPage
                         except:
                             pass
             try:
-                if proxy["https"] == 'http://:@:':
+                if st.session_state.proxy["https"] == 'http://:@:':
                     req = requests.get(url)
                 else:
-                    req = requests.get(url, proxies = proxy)
+                    req = requests.get(url, proxies = st.session_state.proxy)
                 page_text.append(req.text)
                 
             except:
@@ -338,22 +330,26 @@ def extract_transcription_raw(colId, docId, textentryStartPage, textentryEndPage
 
 def get_document_r(colid, docid):
 
-    if proxy["https"] == 'http://:@:':
-        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, sessionId))
+    if st.session_state.proxy["https"] == 'http://:@:':
+        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, st.session_state.sessionId))
     else:
-        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, sessionId), proxies = proxy)
+        r = requests.get("https://transkribus.eu/TrpServer/rest/collections/{}/{}/fulldoc?JSESSIONID={}".format(colid, docid, st.session_state.sessionId), proxies = proxy)
 
     if r.status_code == requests.codes.ok:
         return r.json()
     else:
         print(r)
-        tkinter.messagebox.showinfo('Fehler!','Fehler bei der  Abfrage eines Dokumentes. Doc-ID ' + str(docid) + ' invalid?')
+        st.error(f'Fehler bei der Abfrage eines Dokumentes. Doc-ID {docid} invalid?')
         return None
     
 def get_image_from_url(url):
-        if proxy["https"] == 'http://:@:':
+        if st.session_state.proxy["https"] == 'http://:@:':
             r = requests.get(url, stream=True)
         else:
-            r = requests.get(url, stream=True, proxies = proxy)
+            r = requests.get(url, stream=True, proxies = st.session_state.proxy)
         img = Image.open(r.raw)
         return img
+
+
+if __name__ == "__main__":
+    app()

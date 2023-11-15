@@ -15,51 +15,53 @@ from streamlit.source_util import (
     _on_pages_changed
 )
 
-st.set_page_config(
-    page_title="StAZH Transkribus API",
-    initial_sidebar_state="collapsed",
-)
+def app():
+    st.set_page_config(
+        page_title="StAZH Transkribus API",
+        initial_sidebar_state="collapsed",
+    )
 
-hide_decoration_bar_style = '''
-    <style>
-        header {visibility: hidden;}
-        [data-testid="collapsedControl"] {
-            display: none;
-        }
-    </style>
-'''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
+    hide_decoration_bar_style = '''
+        <style>
+            header {visibility: hidden;}
+            [data-testid="collapsedControl"] {
+                display: none;
+            }
+        </style>
+    '''
+    st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 
-add_logo("data/loewe.png", height=150)
+    add_logo("data/loewe.png", height=150)
 
-st.subheader("StAZH TranskribusAPI")
+    st.subheader("StAZH TranskribusAPI")
 
-st.markdown("Bitte Logindaten eingeben:")
+    st.markdown("Bitte Logindaten eingeben:")
 
-email = st.text_input('Transkribus Email')
-password = st.text_input('Transkribus Passwort', type="password")
+    with st.form(key="login_form"):
+        email = st.text_input('Transkribus Email')
+        password = st.text_input('Transkribus Passwort', type="password")
+        submit_button = st.form_submit_button(label='Login')
 
-if st.button('Login'):
-    if email and password:
-        r = requests.post("https://transkribus.eu/TrpServer/rest/auth/login",
-                                data ={"user":email, "pw":password})
+    if submit_button:
+        if email and password:
+            r = requests.post("https://transkribus.eu/TrpServer/rest/auth/login",
+                                    data ={"user":email, "pw":password})
+            if r.status_code == requests.codes.ok:
+                session = r.text
+                session = et.fromstring(session)
+                createStreamlitSession(session)
 
-        if r.status_code == requests.codes.ok:
-            session = r.text
-            session = et.fromstring(session)
-            userId = session.find("userId").text
-            sessionId = session.find("sessionId").text
-            #check if login was successfull
-            if sessionId == None:
-                st.warning("Fehler! Login war nicht erfolgreich! \n Bitte erneut versuchen.", icon="⚠️")
+                #check if login was successfull
+                if st.session_state.sessionId == None:
+                    st.warning("Fehler! Login war nicht erfolgreich! \n Bitte erneut versuchen.", icon="⚠️")
+                else:
+                    st.warning("Login erfolgreich...", icon="✅")
+                    switch_page("Home")
             else:
-                st.warning("Login erfolgreich...", icon="✅")
-                switch_page("Home")
-        else:
-            st.warning('Login war nicht erfolgreich', icon="⚠️")
+                st.warning('Login war nicht erfolgreich', icon="⚠️")
 
-    else:
-        st.warning('Bitte Logindaten eingeben.', icon="⚠️")
+        else:
+            st.warning('Bitte Logindaten eingeben.', icon="⚠️")
 
 def authentification(request):
     session = {
@@ -70,10 +72,16 @@ def authentification(request):
 
 def createStreamlitSession(auth_session):
     if 'sessionId' not in st.session_state:
-        st.session_state.sessionId = auth_session['sessionId']
+        st.session_state.sessionId = auth_session.find("sessionId").text
 
     if 'username' not in st.session_state:
-        st.session_state.username = auth_session['userId']
+        st.session_state.username = auth_session.find("userId").text
 
     if 'authenticated' not in st.session_state:
         st.session_state.authenticated = True
+
+    if 'proxy' not in st.session_state:
+        st.session_state.proxy = None
+
+if __name__ == "__main__":
+    app()
