@@ -47,15 +47,15 @@ def app():
     checkboxLinie = st.checkbox('Zeilen der Textregion separiert exportieren')
 
     # Input for starting page
-    textentryStartPage = st.text_input('Start Seite:', key='start_page')
+    text_entry_start_page = st.text_input('Start Seite:', key='start_page')
 
     # Input for ending page
-    textentryEndPage = st.text_input('End Seite:', key='end_page')
+    text_entry_end_page = st.text_input('End Seite:', key='end_page')
 
     # Assuming you have a function 'startExtraction' defined elsewhere in your code
     # Create the button to start extraction
     if st.button('Start Extraction'):
-        start_extraction(textentryColId, textentryDocId, textentryStartPage, textentryEndPage, textentryExportTR, checkboxLinie, checkboxBilder)
+        start_extraction(textentryColId, textentryDocId, text_entry_start_page, text_entry_end_page, textentryExportTR, checkboxLinie, checkboxBilder)
     
     # Browse button (the functionality will depend on how you want to implement browsing in Streamlit)
     download_button = st.button('Download extracted data')
@@ -273,26 +273,26 @@ def get_doc_name_from_id(colId, docId):
     return doc['md']['title']
 
 
-def extract_transcription_raw(colId, docId, textentryStartPage, textentryEndPage, toolName):
+def extract_transcription_raw(colId, docId, text_entry_start_page, text_entry_end_page, toolName):
         #get document
         doc = get_document_r(colId, docId)['pageList']['pages']
 
         #setup the startpage
-        if isinstance(textentryStartPage, int):
-            startPage = textentryStartPage
+        if isinstance(text_entry_start_page, int):
+            startPage = text_entry_start_page
         else:
-            startPage = int(textentryStartPage.get())
+            startPage = int(text_entry_start_page.get())
         
-        #define the endPages
-        if textentryEndPage == "-" or textentryEndPage.get() == '-':
-            endPage = len(doc)
-        elif isinstance(textentryEndPage, int):
-            endPage = textentryEndPage
+        #define the end_pages
+        if text_entry_end_page == "-" or text_entry_end_page.get() == '-':
+            end_page = len(doc)
+        elif isinstance(text_entry_end_page, int):
+            end_page = text_entry_end_page
         else:
-            endPage = int(textentryEndPage.get())
+            end_page = int(text_entry_end_page.get())
         
         #define the pages
-        pages = range(startPage-1, endPage)
+        pages = range(startPage-1, end_page)
         
         page_text = []
         
