@@ -18,7 +18,6 @@ st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 
 add_logo("data/loewe.png", height=150)
 
-
 st.header("Import-Modul")
 st.write("##")
 st.markdown("---")
