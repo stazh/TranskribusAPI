@@ -176,7 +176,6 @@ class TextSegmentation():
             self.sampleCol = ""
             self.sampleDoc = ""
         return
-
     
     def saveLogin(self):
         """
@@ -584,7 +583,7 @@ class TextSegmentation():
         textentryDocId = Entry(self.window, bg='white',width=40, font = self.inputFont)
         textentryDocId.grid(row=4, column=1,sticky=W)
         textentryDocId.insert(END, self.sampleDoc)
-                
+
         #Models      
         Label(self.window, text='Modelle:', bg='white', font=self.inputFont).grid(row=7, column=0,sticky=W)
         
@@ -863,7 +862,7 @@ class TextSegmentation():
             tkinter.messagebox.showinfo("!","Fehler bei  Modell {} und Doc {} aufgetreten. Vorgang wird abgebrochen.".format(self.selectedModel.get(), currentDocId))
         return
     
-    
+
     def getErrorRate(self, key, key_ref):
         """
             This gets the wer and cer for a specific model on a specified document
@@ -1029,6 +1028,7 @@ class TextSegmentation():
         checkboxBilder = Checkbutton(self.window, bg='white',font=self.inputFont, text="ohne Bilder exportieren", variable=noExportImages).grid(row=5, column=1,sticky=W)
         exportLinien = IntVar()
         checkboxLinie = Checkbutton(self.window, bg='white',font=self.inputFont, text="Zeilen der Textregion separiert exportieren", variable=exportLinien).grid(row=6, column=1,sticky=W)
+        
         #Target directory
         Label(self.window, text='Zielordner:', bg='white', font=self.inputFont).grid(row=9, column=0,sticky=W)
         
@@ -1205,6 +1205,7 @@ class TextSegmentation():
                                 for t in line.findAll("Unicode"):
                                     last_line = t.text
                                 region_text.append(last_line)
+                            
                             cords = region.find('Coords')['points']
                             points = [c.split(",") for c in cords.split(" ")]
 
@@ -1728,4 +1729,3 @@ class TextSegmentation():
 if __name__ == "__main__":
   
     TS = TextSegmentation()
-    

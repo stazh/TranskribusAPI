@@ -16,6 +16,10 @@ from streamlit.source_util import (
 )
 
 def app():
+    """
+    This function sets up the StAZH TranskribusAPI web application.
+    It handles the login process and displays the login form.
+    """
     st.set_page_config(
         page_title="StAZH Transkribus API",
         initial_sidebar_state="collapsed",
@@ -31,11 +35,13 @@ def app():
     '''
     st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 
-    add_logo("data/loewe.png", height=150)
+    #add_logo("data/loewe.png", height=150)
 
     st.subheader("StAZH TranskribusAPI")
 
     st.markdown("Bitte Logindaten eingeben:")
+
+    credentialPath = '../lib/TranskribusPyClient/src/Transkribus_credential.py'
 
     with st.form(key="login_form"):
         email = st.text_input('Transkribus Email')
@@ -49,7 +55,8 @@ def app():
             if r.status_code == requests.codes.ok:
                 session = r.text
                 session = et.fromstring(session)
-                createStreamlitSession(session)
+                createStreamlitSession(session, email, password)
+                save_credentials(email, password)
 
                 #check if login was successfull
                 if st.session_state.sessionId == None:
@@ -70,7 +77,7 @@ def authentification(request):
     }
     return session
 
-def createStreamlitSession(auth_session):
+def createStreamlitSession(auth_session, email, password):
     if 'sessionId' not in st.session_state:
         st.session_state.sessionId = auth_session.find("sessionId").text
 
@@ -81,7 +88,28 @@ def createStreamlitSession(auth_session):
         st.session_state.authenticated = True
 
     if 'proxy' not in st.session_state:
-        st.session_state.proxy = None
+        st.session_state.proxy = {"https" : 'http://:@:',
+                         "http" : 'http://:@:'}
+
+    st.session_state.email = email
+    st.session_state.password = password
+
+def save_credentials(email, password, credentialPath):
+    """
+            If desired this function saves the email and password in a file.
+            NOTE: This is not save against reads from others.
+    """
+    file = open(credentialPath, "wt") 
+    lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(email),'password = "{}"\n'.format(password),'linien_col  = "{}"\n'.format(linienCol),'linien_doc  = "{}"\n'.format(linienDoc),'linien_TR  = "{}"\n'.format(linienTR),
+    'suchenErsetzenCol  = "{}"\n'.format(suchenErsetzenCol),
+    'suchenErsetzenDoc  = "{}"\n'.format(suchenErsetzenDoc),
+    'exportCol = "{}"\n'.format(exportCol),'exportDoc  = "{}"\n'.format(exportDoc),
+    'importCol  = "{}"\n'.format(importCol),
+    'sampleCol  = "{}"\n'.format(sampleCol),
+    'sampleDoc  = "{}"\n'.format(sampleDoc)]
+    file.writelines(lines)
+    file.close()
+    return
 
 if __name__ == "__main__":
     app()

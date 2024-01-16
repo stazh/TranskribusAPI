@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
-login    = 
-password = 
+login    = "zivi.staatsarchiv@ji.zh.ch"
+password = "ZiviPasswort"

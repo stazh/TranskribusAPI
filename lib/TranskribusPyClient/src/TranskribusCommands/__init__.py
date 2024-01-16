@@ -82,7 +82,7 @@ def _exit(usage, status, exc=None):
     if exc != None: sys.stderr.write(str(exc))  #any exception?
     sys.exit(status)    
     
-    
+
 def strTabularFormat(lDic, lsKey, sSortKey=None):
     """
     Format as a table a list of dictionary like:
@@ -110,4 +110,3 @@ def strTabularFormat(lDic, lsKey, sSortKey=None):
     sRet += sFmt % {s:("-"*n) for s,n in zip(lsKey, lWidth)}
     for record in lDic: sRet += sFmt % record
     return sRet
- 

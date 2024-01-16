@@ -1163,6 +1163,7 @@ doBlockSeg=false
         return requests.delete(sRequest, params=params, headers={'Cookie':'JSESSIONID=%s'%self._sessionID}
                                , proxies=self._dProxies, data=data, verify=False)        
         
+
     def _GET(self, sRequest, params={}, stream=None, accept="application/xml"):
         if stream == None: #not sure what is the default value...
             return requests.get(sRequest, params=params, headers={'Cookie':'JSESSIONID=%s'%self._sessionID, 'Accept':accept}
