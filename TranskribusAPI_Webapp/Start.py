@@ -56,14 +56,14 @@ def app():
                 session = r.text
                 session = et.fromstring(session)
                 createStreamlitSession(session, email, password)
-                save_credentials(email, password)
+                #save_credentials(email, password, credentialPath)
 
                 #check if login was successfull
                 if st.session_state.sessionId == None:
                     st.warning("Fehler! Login war nicht erfolgreich! \n Bitte erneut versuchen.", icon="⚠️")
                 else:
                     st.warning("Login erfolgreich...", icon="✅")
-                    switch_page("Home")
+                    switch_page("home")
             else:
                 st.warning('Login war nicht erfolgreich', icon="⚠️")
 
@@ -94,22 +94,22 @@ def createStreamlitSession(auth_session, email, password):
     st.session_state.email = email
     st.session_state.password = password
 
-def save_credentials(email, password, credentialPath):
-    """
-            If desired this function saves the email and password in a file.
-            NOTE: This is not save against reads from others.
-    """
-    file = open(credentialPath, "wt") 
-    lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(email),'password = "{}"\n'.format(password),'linien_col  = "{}"\n'.format(linienCol),'linien_doc  = "{}"\n'.format(linienDoc),'linien_TR  = "{}"\n'.format(linienTR),
-    'suchenErsetzenCol  = "{}"\n'.format(suchenErsetzenCol),
-    'suchenErsetzenDoc  = "{}"\n'.format(suchenErsetzenDoc),
-    'exportCol = "{}"\n'.format(exportCol),'exportDoc  = "{}"\n'.format(exportDoc),
-    'importCol  = "{}"\n'.format(importCol),
-    'sampleCol  = "{}"\n'.format(sampleCol),
-    'sampleDoc  = "{}"\n'.format(sampleDoc)]
-    file.writelines(lines)
-    file.close()
-    return
+#def save_credentials(email, password, credentialPath):
+#    """
+#            If desired this function saves the email and password in a file.
+#            NOTE: This is not save against reads from others.
+#    """
+#    file = open(credentialPath, "wt") 
+#    lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(email),'password = "{}"\n'.format(password),'linien_col  = "{}"\n'.format(linienCol),'linien_doc  = "{}"\n'.format(linienDoc),'linien_TR  = "{}"\n'.format(linienTR),
+#    'suchenErsetzenCol  = "{}"\n'.format(suchenErsetzenCol),
+#    'suchenErsetzenDoc  = "{}"\n'.format(suchenErsetzenDoc),
+#    'exportCol = "{}"\n'.format(exportCol),'exportDoc  = "{}"\n'.format(exportDoc),
+#    'importCol  = "{}"\n'.format(importCol),
+#    'sampleCol  = "{}"\n'.format(sampleCol),
+#    'sampleDoc  = "{}"\n'.format(sampleDoc)]
+#    file.writelines(lines)
+#    file.close()
+#    return
 
 if __name__ == "__main__":
     app()
