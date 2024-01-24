@@ -1,5 +1,0 @@
-ToDo:
-- Save credentials in file
-- Export-Module -> Allow local data manipulation => Done, only user specific folder has to be done
-- Add several error handling mechanics
-- Remove Start from all pages
