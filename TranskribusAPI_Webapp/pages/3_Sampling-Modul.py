@@ -74,8 +74,18 @@ def evaluateSelectedModels(colId, docId, imgExport, startPage, endPage):
     This function starts the evaluation process by using the selected model for transcription,
     if no transcription is available. Note: If docId is == "" then the process is applied to all
     documents inside the defined collection.
+
+    Parameters:
+    - colId (str): The ID of the collection.
+    - docId (str): The ID of the document. If empty, the process is applied to all documents in the collection.
+    - imgExport (bool): Flag indicating whether to export images during evaluation.
+    - startPage (int): The starting page for evaluation.
+    - endPage (int): The ending page for evaluation.
     """
     try:
+        # Saves credentials of user into a file
+        # This is necessary for the Transkribus API
+        credential_path = uf.save_credentials(st)
         if docId == "":
             docIds = getDocIdsList(st.session_state.sessionId, colId)
             for c, docId in enumerate(docIds):
@@ -83,7 +93,10 @@ def evaluateSelectedModels(colId, docId, imgExport, startPage, endPage):
         else:
             evaluateModels(colId, docId, imgExport, startPage, endPage)
         st.success("Alle Samples evaluiert.")
+        # Removes created credentials file
+        os.remove(credential_path)
     except Exception as e:
+        os.remove(credential_path)
         st.warning('Prozess abgebrochen wegen Fehler: ' + str(e), icon="⚠️")
 
 

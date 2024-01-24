@@ -11,7 +11,6 @@ import requests
 import os
 
 
-
 def app():
     """
     This is the starting point of the application, thus it runs first.
@@ -23,6 +22,7 @@ def app():
         None
     """
 
+    # Check if the user is logged in and set the header accordingly via utility_functions.py
     uf.check_session_state(st)
     uf.set_header('Export-Modul', st)
 

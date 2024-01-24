@@ -1,7 +1,5 @@
 import streamlit as st
-import pandas as pd
 from streamlit_option_menu import option_menu
-from PIL import Image
 from streamlit.components.v1 import html
 from streamlit_extras.app_logo import add_logo
 from streamlit_extras.switch_page_button import switch_page
@@ -41,8 +39,6 @@ def app():
 
     st.markdown("Bitte Logindaten eingeben:")
 
-    credentialPath = '../lib/TranskribusPyClient/src/Transkribus_credential.py'
-
     with st.form(key="login_form"):
         email = st.text_input('Transkribus Email')
         password = st.text_input('Transkribus Passwort', type="password")
@@ -78,6 +74,14 @@ def authentification(request):
     return session
 
 def createStreamlitSession(auth_session, email, password):
+    """
+    Creates a Streamlit session with the provided authentication session, email, and password.
+
+    Parameters:
+    - auth_session: The authentication session.
+    - email: The email associated with the session.
+    - password: The password associated with the session.
+    """
     if 'sessionId' not in st.session_state:
         st.session_state.sessionId = auth_session.find("sessionId").text
 
@@ -94,22 +98,59 @@ def createStreamlitSession(auth_session, email, password):
     st.session_state.email = email
     st.session_state.password = password
 
-#def save_credentials(email, password, credentialPath):
-#    """
-#            If desired this function saves the email and password in a file.
-#            NOTE: This is not save against reads from others.
-#    """
-#    file = open(credentialPath, "wt") 
-#    lines = ['# -*- coding: utf-8 -*-\n', 'login = "{}"\n'.format(email),'password = "{}"\n'.format(password),'linien_col  = "{}"\n'.format(linienCol),'linien_doc  = "{}"\n'.format(linienDoc),'linien_TR  = "{}"\n'.format(linienTR),
-#    'suchenErsetzenCol  = "{}"\n'.format(suchenErsetzenCol),
-#    'suchenErsetzenDoc  = "{}"\n'.format(suchenErsetzenDoc),
-#    'exportCol = "{}"\n'.format(exportCol),'exportDoc  = "{}"\n'.format(exportDoc),
-#    'importCol  = "{}"\n'.format(importCol),
-#    'sampleCol  = "{}"\n'.format(sampleCol),
-#    'sampleDoc  = "{}"\n'.format(sampleDoc)]
-#    file.writelines(lines)
-#    file.close()
-#    return
+def save_credentials(email, password, credentials_path):
+    """
+    Save the provided email and password to the credentials file.
+
+    Args:
+        email (str): The email to be saved.
+        password (str): The password to be saved.
+        credentials_path (str): The path to the credentials file.
+
+    Returns:
+        None
+    """
+    # Path to the credentials.py file
+    credentials_path = credentials_path + st.session_state.sessionId + '.py'
+
+    # If the file doesn't exist, create it
+    if not Path(credentials_path).is_file():
+        create_credentials_file(credentials_path)
+        return
+
+    # Read the existing content
+    with open(credentials_path, 'r') as file:
+        content = file.readlines()
+
+    # Modify the content
+    for i, line in enumerate(content):
+        if 'login' in line:
+            content[i] = f'login    = "{email}"\n'
+        elif 'password' in line:
+            content[i] = f'password = "{password}"\n'
+
+    # Write the modified content back
+    with open(credentials_path, 'w') as file:
+        file.writelines(content)
+
+def create_credentials_file(file_name, login='', password=''):
+    """
+    Create a credentials file with the provided login and password.
+
+    Args:
+        file_name (str): The name of the file to create.
+        login (str, optional): The login to be included in the credentials file. Defaults to an empty string.
+        password (str, optional): The password to be included in the credentials file. Defaults to an empty string.
+    """
+
+    content = f"""# -*- coding: utf-8 -*-
+    login    = "{login}"
+    password = "{password}"
+    """
+
+    with open(file_name, 'w', encoding='utf-8') as file:
+        file.write(content)
+
 
 if __name__ == "__main__":
     app()
