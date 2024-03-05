@@ -1,5 +1,0 @@
-Streamlit
-streamlit-option-menu
-pandas
-pillow
-streamlit-extras
