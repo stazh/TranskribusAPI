@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+login = ""
+password = ""
+linien_col  = ""
+linien_doc  = ""
+linien_TR  = ""
+suchenErsetzenCol  = ""
+suchenErsetzenDoc  = ""
+exportCol = ""
+exportDoc  = ""
+importCol  = ""
+sampleCol  = ""
+sampleDoc  = ""
